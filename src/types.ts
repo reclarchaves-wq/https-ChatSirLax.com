@@ -68,3 +68,27 @@ export interface CommunityStats {
   offlinePacksDownloaded: number;
   adSponsoredMeals: number;
 }
+
+export interface UserActivityStats {
+  homeworksSolved: number;
+  mealsSponsored: number;
+  packsDownloaded: number;
+  voiceListens: number;
+  diyProjectsViewed: number;
+}
+
+export interface AchievementBadge {
+  id: string;
+  title: string;
+  category: 'homework' | 'feeding' | 'offline' | 'voice' | 'community';
+  description: string;
+  icon: string;
+  target: number;
+  current: number;
+  unlocked: boolean;
+  unlockedAt?: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  rewardMotto: string;
+  tag: string;
+}
+

@@ -12,12 +12,13 @@ import { FeedingTab } from './components/FeedingTab';
 import { MediaGalleryTab } from './components/MediaGalleryTab';
 import { DashboardTab } from './components/DashboardTab';
 import { AdUnitsTab } from './components/AdUnitsTab';
+import { Achievements } from './components/Achievements';
 import { RewardedAdModal } from './components/RewardedAdModal';
 import { InstallModal } from './components/InstallModal';
 import { BottomBannerAd } from './components/BottomBannerAd';
 import { Footer } from './components/Footer';
 import { INITIAL_COMMUNITY_STATS, INITIAL_OFFLINE_PACKS } from './data/mockData';
-import { CommunityStats, LanguageMode, OfflineStudyPack } from './types';
+import { CommunityStats, LanguageMode, OfflineStudyPack, UserActivityStats } from './types';
 import confetti from 'canvas-confetti';
 
 export default function App() {
@@ -49,6 +50,39 @@ export default function App() {
     }
     return INITIAL_OFFLINE_PACKS;
   });
+
+  // User personal achievement stats
+  const [userStats, setUserStats] = useState<UserActivityStats>(() => {
+    const saved = localStorage.getItem('csl_user_stats');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (_) {}
+    }
+    return {
+      homeworksSolved: 7, // Seeded at 7 so the student can easily reach the 10 homeworks solved milestone!
+      mealsSponsored: 12,
+      packsDownloaded: 2,
+      voiceListens: 4,
+      diyProjectsViewed: 2,
+    };
+  });
+
+  // Calculate unlocked badges count dynamically
+  const unlockedBadgesCount = [
+    userStats.homeworksSolved >= 1,
+    userStats.homeworksSolved >= 5,
+    userStats.homeworksSolved >= 10,
+    userStats.homeworksSolved >= 25,
+    userStats.mealsSponsored >= 1,
+    userStats.mealsSponsored >= 10,
+    userStats.mealsSponsored >= 50,
+    userStats.mealsSponsored >= 100,
+    userStats.packsDownloaded >= 1,
+    userStats.packsDownloaded >= 3,
+    userStats.voiceListens >= 3,
+    userStats.diyProjectsViewed >= 1,
+  ].filter(Boolean).length;
 
   // Modals
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
@@ -115,6 +149,15 @@ export default function App() {
       localStorage.setItem('csl_stats', JSON.stringify(updated));
       return updated;
     });
+
+    setUserStats((prev) => {
+      const updated = {
+        ...prev,
+        packsDownloaded: prev.packsDownloaded + 1,
+      };
+      localStorage.setItem('csl_user_stats', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   // Handle sponsoring meals
@@ -125,6 +168,28 @@ export default function App() {
         mealsServed: prev.mealsServed + count,
       };
       localStorage.setItem('csl_stats', JSON.stringify(updated));
+      return updated;
+    });
+
+    setUserStats((prev) => {
+      const nextMeals = prev.mealsSponsored + count;
+      const updated = {
+        ...prev,
+        mealsSponsored: nextMeals,
+      };
+      localStorage.setItem('csl_user_stats', JSON.stringify(updated));
+
+      // Check for milestone: 100 Meals Sponsored!
+      if (nextMeals >= 100 && prev.mealsSponsored < 100) {
+        try {
+          confetti({
+            particleCount: 120,
+            spread: 90,
+            origin: { y: 0.5 },
+            colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
+          });
+        } catch (_) {}
+      }
       return updated;
     });
 
@@ -149,6 +214,27 @@ export default function App() {
       return updated;
     });
 
+    setUserStats((prev) => {
+      const nextMeals = prev.mealsSponsored + 1;
+      const updated = {
+        ...prev,
+        mealsSponsored: nextMeals,
+      };
+      localStorage.setItem('csl_user_stats', JSON.stringify(updated));
+
+      if (nextMeals >= 100 && prev.mealsSponsored < 100) {
+        try {
+          confetti({
+            particleCount: 120,
+            spread: 90,
+            origin: { y: 0.5 },
+            colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
+          });
+        } catch (_) {}
+      }
+      return updated;
+    });
+
     if (!isOffline) {
       fetch('/api/support-meal', {
         method: 'POST',
@@ -165,6 +251,28 @@ export default function App() {
         homeworkSolved: prev.homeworkSolved + 1,
       };
       localStorage.setItem('csl_stats', JSON.stringify(updated));
+      return updated;
+    });
+
+    setUserStats((prev) => {
+      const nextHw = prev.homeworksSolved + 1;
+      const updated = {
+        ...prev,
+        homeworksSolved: nextHw,
+      };
+      localStorage.setItem('csl_user_stats', JSON.stringify(updated));
+
+      // Check for milestone: 10 Homeworks Solved!
+      if (nextHw === 10) {
+        try {
+          confetti({
+            particleCount: 100,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6'],
+          });
+        } catch (_) {}
+      }
       return updated;
     });
   };
@@ -184,6 +292,8 @@ export default function App() {
         onOpenAdUnits={() => setActiveTab('monetization')}
         onOpenFeedModal={() => setActiveTab('feeding')}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        onOpenAchievements={() => setActiveTab('achievements')}
+        unlockedBadgesCount={unlockedBadgesCount}
         mealsCount={stats.mealsServed}
       />
 
@@ -192,6 +302,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         downloadedCount={downloadedCount}
+        unlockedBadgesCount={unlockedBadgesCount}
       />
 
       {/* Main Tab Content */}
@@ -202,6 +313,17 @@ export default function App() {
             fontSize={fontSize}
             isForceOffline={isOffline}
             onSolveHomework={handleSolveHomework}
+          />
+        )}
+
+        {activeTab === 'achievements' && (
+          <Achievements
+            userStats={userStats}
+            communityStats={stats}
+            onNavigateToTab={(tab) => setActiveTab(tab)}
+            onSolveHomeworkQuick={handleSolveHomework}
+            onSponsorMealQuick={(count) => handleSponsorMeal(count)}
+            onWatchAdQuick={() => setIsRewardedAdModalOpen(true)}
           />
         )}
 
@@ -228,6 +350,7 @@ export default function App() {
             stats={stats}
             onOpenFeedModal={() => setActiveTab('feeding')}
             onWatchAdToFeed={() => setIsRewardedAdModalOpen(true)}
+            onNavigateToAchievements={() => setActiveTab('achievements')}
           />
         )}
 

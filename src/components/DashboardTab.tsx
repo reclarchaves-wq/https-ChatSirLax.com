@@ -20,12 +20,14 @@ interface DashboardTabProps {
   stats: CommunityStats;
   onOpenFeedModal: () => void;
   onWatchAdToFeed: () => void;
+  onNavigateToAchievements?: () => void;
 }
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({
   stats,
   onOpenFeedModal,
   onWatchAdToFeed,
+  onNavigateToAchievements,
 }) => {
   const goalMeals = 20000;
   const progressPercent = Math.min(100, Math.round((stats.mealsServed / goalMeals) * 100));
@@ -140,6 +142,36 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="text-xs text-stone-500 font-semibold mt-0.5">Barangay Learning Hubs</div>
         </div>
       </div>
+
+      {/* Achievements Motivation Banner */}
+      {onNavigateToAchievements && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-400 text-stone-950 flex items-center justify-center text-3xl shadow-md shrink-0">
+              🏆
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                Student &amp; Sponsor Motivation
+              </span>
+              <h3 className="text-lg sm:text-xl font-black text-stone-900 font-['Fredoka',sans-serif] mt-0.5">
+                Earn Badges for 10 Homeworks Solved &amp; 100 Meals Sponsored!
+              </h3>
+              <p className="text-xs text-stone-600 mt-0.5">
+                Track personal study streaks, celebrate milestones with Sir Lax voice praise, and earn printable Honor Certificates.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onNavigateToAchievements}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-2xl shadow-sm transition transform hover:scale-105 shrink-0 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Award size={16} />
+            <span>Open Achievements &amp; Badges &rarr;</span>
+          </button>
+        </div>
+      )}
 
       {/* Community Learning Hubs & Schedules */}
       <div className="bg-white rounded-3xl border border-stone-200 p-5 sm:p-6 shadow-xs">

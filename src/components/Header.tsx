@@ -1,6 +1,6 @@
 import React from 'react';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { Wifi, WifiOff, Volume2, Sparkles, HeartHandshake, ShieldCheck, Download } from 'lucide-react';
+import { Wifi, WifiOff, Volume2, Sparkles, HeartHandshake, ShieldCheck, Download, Trophy } from 'lucide-react';
 import { LanguageMode } from '../types';
 
 interface HeaderProps {
@@ -11,6 +11,8 @@ interface HeaderProps {
   onOpenAdUnits: () => void;
   onOpenFeedModal: () => void;
   onOpenInstallModal: () => void;
+  onOpenAchievements?: () => void;
+  unlockedBadgesCount?: number;
   fontSize: 'normal' | 'large' | 'huge';
   setFontSize: (size: 'normal' | 'large' | 'huge') => void;
   mealsCount: number;
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdUnits,
   onOpenFeedModal,
   onOpenInstallModal,
+  onOpenAchievements,
+  unlockedBadgesCount = 0,
   fontSize,
   setFontSize,
   mealsCount,
@@ -138,6 +142,21 @@ export const Header: React.FC<HeaderProps> = ({
             <option value="filipino">🇵🇭 Tagalog / Filipino</option>
             <option value="bilingual">📖 Bilingual (EN + TL)</option>
           </select>
+
+          {/* Achievements Button */}
+          {onOpenAchievements && (
+            <button
+              onClick={onOpenAchievements}
+              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-stone-950 font-black text-xs sm:text-sm px-2.5 sm:px-3 py-1.5 rounded-xl shadow-md transition transform hover:scale-105 cursor-pointer border border-yellow-200"
+              title="View Student Achievements & Badges"
+            >
+              <Trophy size={15} className="text-amber-700 fill-amber-700" />
+              <span className="hidden md:inline">Badges</span>
+              <span className="bg-amber-950 text-yellow-300 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold">
+                {unlockedBadgesCount}
+              </span>
+            </button>
+          )}
 
           {/* Quick Sponsor Meal button */}
           <button

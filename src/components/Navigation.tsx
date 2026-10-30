@@ -1,18 +1,20 @@
 import React from 'react';
-import { MessageSquareText, BookOpenCheck, UtensilsCrossed, Image as ImageIcon, BarChart3, Coins } from 'lucide-react';
+import { MessageSquareText, BookOpenCheck, UtensilsCrossed, Image as ImageIcon, BarChart3, Coins, Trophy } from 'lucide-react';
 
-export type TabKey = 'chat' | 'offline-packs' | 'feeding' | 'media' | 'dashboard' | 'monetization';
+export type TabKey = 'chat' | 'offline-packs' | 'feeding' | 'media' | 'dashboard' | 'achievements' | 'monetization';
 
 interface NavigationProps {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
   downloadedCount: number;
+  unlockedBadgesCount?: number;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   setActiveTab,
   downloadedCount,
+  unlockedBadgesCount = 0,
 }) => {
   const tabs = [
     {
@@ -21,6 +23,13 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: MessageSquareText,
       badge: 'AI + Voice',
       badgeColor: 'bg-emerald-500 text-white',
+    },
+    {
+      id: 'achievements' as TabKey,
+      label: 'Achievements',
+      icon: Trophy,
+      badge: `${unlockedBadgesCount} Badges`,
+      badgeColor: 'bg-amber-600 text-white',
     },
     {
       id: 'offline-packs' as TabKey,
