@@ -243,6 +243,137 @@ export const OfflinePacksTab: React.FC<OfflinePacksTabProps> = ({
                 )}
               </div>
 
+              {/* Interactive Sandbox Zone according to Subject */}
+              {selectedPack.category === 'math' && (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-black uppercase text-amber-900 bg-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles size={13} className="text-amber-700" /> Interactive Mango Counting Sandbox 🥭
+                    </span>
+                    <span className="text-xs font-semibold text-stone-500">Tap to count hands-on!</span>
+                  </div>
+                  <p className="text-xs text-stone-700 mb-3">
+                    Put delicious mangoes into your basket. Count each one out loud!
+                  </p>
+                  <div className="bg-white p-3.5 rounded-xl border border-amber-200 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-stone-700">Mango Basket:</span>
+                      <div className="flex items-center gap-1 min-h-[36px] bg-amber-100/50 px-3 py-1 rounded-xl">
+                        {Array.from({ length: Math.min(10, Math.max(1, activeLessonIndex + 3)) }).map((_, i) => (
+                          <span
+                            key={i}
+                            onClick={() => {
+                              try {
+                                confetti({ particleCount: 30, spread: 40, origin: { y: 0.8 } });
+                              } catch (_) {}
+                            }}
+                            className="text-2xl cursor-pointer hover:scale-125 transition transform"
+                            title={`Mango #${i + 1}`}
+                          >
+                            🥭
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-amber-950 font-['Fredoka',sans-serif]">
+                        Total: {Math.min(10, Math.max(1, activeLessonIndex + 3))} Mangoes!
+                      </span>
+                      <button
+                        onClick={() => {
+                          try {
+                            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                          } catch (_) {}
+                          SpeechService.speak(`You have ${activeLessonIndex + 3} delicious mangoes! Great counting!`);
+                        }}
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs transition cursor-pointer"
+                      >
+                        Count Aloud 🎙️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPack.category === 'english' && (
+                <div className="bg-sky-50 border-2 border-sky-300 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-black uppercase text-sky-900 bg-sky-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles size={13} className="text-sky-700" /> Grade 1 Phonics Soundboard 🔤
+                    </span>
+                    <span className="text-xs font-semibold text-stone-500">Tap any letter to hear the sound!</span>
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mt-2">
+                    {[
+                      { letter: 'A', word: 'Apple', sound: 'Ah', emoji: '🍎' },
+                      { letter: 'B', word: 'Ball', sound: 'Buh', emoji: '⚽' },
+                      { letter: 'C', word: 'Cat', sound: 'Kuh', emoji: '🐱' },
+                      { letter: 'D', word: 'Dog', sound: 'Duh', emoji: '🐶' },
+                      { letter: 'E', word: 'Egg', sound: 'Eh', emoji: '🥚' },
+                      { letter: 'F', word: 'Fish', sound: 'Fff', emoji: '🐟' },
+                      { letter: 'G', word: 'Girl', sound: 'Guh', emoji: '👧' },
+                    ].map((item) => (
+                      <button
+                        key={item.letter}
+                        onClick={() => {
+                          SpeechService.speak(`${item.letter} is for ${item.word}. The sound says ${item.sound}, ${item.sound}, ${item.word}!`);
+                        }}
+                        className="p-2 bg-white rounded-xl border border-sky-200 hover:border-sky-400 hover:shadow-xs transition text-center cursor-pointer transform hover:-translate-y-0.5"
+                      >
+                        <div className="text-base font-black text-sky-900 font-['Fredoka',sans-serif]">{item.letter}</div>
+                        <div className="text-lg my-0.5">{item.emoji}</div>
+                        <div className="text-[10px] font-bold text-stone-600">{item.word}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPack.category === 'science' && (
+                <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-black uppercase text-emerald-900 bg-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles size={13} className="text-emerald-700" /> Two-Zone Water Cycle Visualizer 🌧️☀️
+                    </span>
+                    <span className="text-xs font-semibold text-stone-500">Interactive Nature Stage</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center mt-2">
+                    <div
+                      onClick={() => SpeechService.speak('Evaporation: The warm sun heats up river water into invisible vapor!')}
+                      className="bg-white p-3 rounded-xl border border-amber-200 hover:border-amber-400 cursor-pointer shadow-2xs hover:shadow-xs transition"
+                    >
+                      <div className="text-2xl mb-1">☀️</div>
+                      <div className="font-bold text-xs text-amber-900">1. Evaporation</div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Sun warms water &rarr; steam flies up</p>
+                    </div>
+
+                    <div
+                      onClick={() => SpeechService.speak('Condensation: The steam cools in the sky and gathers into big clouds!')}
+                      className="bg-white p-3 rounded-xl border border-sky-200 hover:border-sky-400 cursor-pointer shadow-2xs hover:shadow-xs transition"
+                    >
+                      <div className="text-2xl mb-1">☁️</div>
+                      <div className="font-bold text-xs text-sky-900">2. Condensation</div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Droplets hug &rarr; heavy clouds</p>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        try {
+                          confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+                        } catch (_) {}
+                        SpeechService.speak('Precipitation: Drops fall down as rain to water our crops and trees!');
+                      }}
+                      className="bg-white p-3 rounded-xl border border-blue-200 hover:border-blue-400 cursor-pointer shadow-2xs hover:shadow-xs transition"
+                    >
+                      <div className="text-2xl mb-1">🌧️</div>
+                      <div className="font-bold text-xs text-blue-900">3. Precipitation</div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">Rain pours &rarr; rivers fill</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Steps or Checklist */}
               {activeLesson.steps && activeLesson.steps.length > 0 && (
                 <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200">

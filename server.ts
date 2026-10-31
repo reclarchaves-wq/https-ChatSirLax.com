@@ -203,10 +203,29 @@ function generateSmartFallbackReply(query: string, mode: string, _gradeLevel: st
   return `🌟 **Hi! Kuya Sir Lax is here to help you!**\n\nI read your question: "*${query}*".\n\nHere is how we understand it easily:\n1. 📖 **Step 1:** Read the question slowly, one word at a time.\n2. 💡 **Step 2:** Find the main idea or clue.\n3. ✏️ **Step 3:** Write your idea in simple words.\n\nNever be afraid to make mistakes—that is how we learn! Tell me: which part feels tricky, and let us solve it together! 🇵🇭💪`;
 }
 
+// Health check endpoint
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Development or Production static serving
 async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
   const httpServer = http.createServer(app);
+
+  httpServer.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Port ${PORT} is in use, retrying connection in 1 second...`);
+      setTimeout(() => {
+        try {
+          httpServer.close();
+        } catch (_) {}
+        httpServer.listen(PORT, '0.0.0.0');
+      }, 1000);
+    } else {
+      console.error('Server listen error:', err);
+    }
+  });
 
   if (!isProd) {
     const vite = await createViteServer({
@@ -226,6 +245,12 @@ async function startServer() {
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Chat Sir Lax server running on http://0.0.0.0:${PORT}`);
+  });
+
+  process.on('SIGTERM', () => {
+    try {
+      httpServer.close();
+    } catch (_) {}
   });
 }
 
