@@ -290,6 +290,56 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
         </div>
       </div>
 
+      {/* Food Preparation Transparency Ledger */}
+      <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-7 shadow-xs">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div>
+            <span className="text-xs font-black uppercase tracking-wider text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full">
+              Full Transparency
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-stone-900 mt-1 font-['Fredoka',sans-serif]">
+              Kitchen Cost Breakdown: How Meals Reach Students
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1">
+              Every peso earned through sponsor ad units and donations buys real ingredients prepared fresh daily.
+            </p>
+          </div>
+          <span className="hidden sm:inline-flex text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+            100% Volunteer Cooked
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
+            <div className="text-2xl mb-1">🌾</div>
+            <div className="font-bold text-stone-900 text-sm">Sack of Premium Rice (50kg)</div>
+            <div className="text-xs text-amber-900 font-bold mt-1">₱2,450 &rarr; 400 Warm Bowls</div>
+            <p className="text-[11px] text-stone-600 mt-1">Thick, satisfying arroz caldo foundation that keeps children full until sunset.</p>
+          </div>
+
+          <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-200">
+            <div className="text-2xl mb-1">🥚</div>
+            <div className="font-bold text-stone-900 text-sm">Farm Fresh Eggs (Tray of 30)</div>
+            <div className="text-xs text-rose-900 font-bold mt-1">₱240 &rarr; 30 Kids Nourished</div>
+            <p className="text-[11px] text-stone-600 mt-1">Vital protein, iron, and choline for brain development and alert classroom focus.</p>
+          </div>
+
+          <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200">
+            <div className="text-2xl mb-1">🍗</div>
+            <div className="font-bold text-stone-900 text-sm">Chicken &amp; Fresh Ginger Root</div>
+            <div className="text-xs text-emerald-900 font-bold mt-1">₱1,200 &rarr; 200 Portions</div>
+            <p className="text-[11px] text-stone-600 mt-1">Rich ginger and garlic broth to prevent colds and boost student immunity in rainy seasons.</p>
+          </div>
+
+          <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-200">
+            <div className="text-2xl mb-1">🔥</div>
+            <div className="font-bold text-stone-900 text-sm">Clean Fuel &amp; Recyclable Bowls</div>
+            <div className="text-xs text-sky-900 font-bold mt-1">₱450 &rarr; Daily Clean Batch</div>
+            <p className="text-[11px] text-stone-600 mt-1">Sanitary food grade preparation with purified potable water for safe digestion.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Request Meal Assistance Form */}
       <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-7 shadow-xs">
         <div className="max-w-xl">
