@@ -77,16 +77,17 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [activeSpeechId, setActiveSpeechId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Auto-scroll to bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Auto-scroll inside message list only when conversation grows
   useEffect(() => {
-    scrollToBottom();
+    if ((messages.length > 1 || loading) && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [messages, loading]);
 
   // Clean up speech on unmount
@@ -241,9 +242,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] min-h-[550px] max-w-4xl mx-auto bg-stone-50 rounded-2xl shadow-sm border border-amber-200 overflow-hidden my-3">
+    <div className="flex flex-col h-[calc(100dvh-250px)] min-h-[400px] max-h-[680px] max-w-4xl mx-auto bg-stone-50 rounded-2xl shadow-md border-2 border-amber-300 overflow-hidden my-2">
       {/* Control bar: Modes & Grade selector */}
-      <div className="bg-amber-100/70 border-b border-amber-200 p-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="shrink-0 bg-amber-100/70 border-b border-amber-200 p-2.5 flex flex-wrap items-center justify-between gap-2">
         {/* Mode pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <button
@@ -324,7 +325,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       )}
 
       {/* Chat Messages List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-4">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           const isSpeaking = activeSpeechId === msg.id;
@@ -445,12 +446,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           </div>
         )}
 
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Voice Listening Overlay */}
       {isListening && (
-        <div className="bg-rose-50 border-t-2 border-rose-300 px-4 py-2 flex items-center justify-between text-xs text-rose-900 animate-pulse">
+        <div className="shrink-0 bg-rose-50 border-t-2 border-rose-300 px-4 py-2 flex items-center justify-between text-xs text-rose-900 animate-pulse">
           <div className="flex items-center gap-2 font-bold">
             <span className="w-3 h-3 rounded-full bg-rose-500"></span>
             <span>Sir Lax is listening to your question... Speak clearly, kiddo!</span>
@@ -465,7 +465,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       )}
 
       {/* Input area */}
-      <div className="bg-white border-t border-amber-200 p-2.5 sm:p-3">
+      <div className="shrink-0 bg-white border-t-2 border-amber-300 p-2.5 sm:p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();

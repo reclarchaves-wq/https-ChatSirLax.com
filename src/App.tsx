@@ -491,7 +491,7 @@ export default function App() {
       )}
 
       {/* Main Tab Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-2">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-2 pb-20">
         {activeTab === 'chat' && (
           <ChatTab
             language={language}
