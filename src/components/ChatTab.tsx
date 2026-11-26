@@ -379,11 +379,16 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 {/* Header label for bot */}
                 {!isUser && (
                   <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-amber-100 text-xs text-amber-900 font-bold">
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5">
                       Sir Lax (Your Teacher)
-                      {msg.isOffline && (
-                        <span className="bg-sky-100 text-sky-800 text-[10px] px-1.5 py-0.2 rounded-full font-semibold">
+                      {msg.isOffline === true && (
+                        <span className="bg-sky-100 text-sky-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
                           Offline Pack
+                        </span>
+                      )}
+                      {msg.isOffline === false && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
+                          ✨ Gemini AI
                         </span>
                       )}
                     </span>
