@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { ChatMessage, GradeLevel, LanguageMode, ModeType } from '../types';
+import { ChatMessage, EducationCourseTrack, GradeLevel, LanguageMode, ModeType } from '../types';
 import { sendChatMessage } from '../services/chatService';
 import { SpeechService } from '../services/speechService';
 import confetti from 'canvas-confetti';
@@ -42,13 +42,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     {
       id: 'welcome-1',
       sender: 'bot',
-      text: `Hello anak! I am **Sir Lax**, your community teacher and kuya! 🌟\n\nRemember our golden motto: **"EDUCATION IS THE KEY FOR CHANGE!"** 🇵🇭\n\nStruggling with homework? Need an easy DIY science project? Or having trouble understanding English words? \n\nDon't worry! Ask me anything, or tap the **microphone 🎙️** to speak. I will explain it in basic, super easy words that even a Grade 1 learner can understand! Let's learn together! ✏️🍎`,
+      text: `Hello! I am **Sir Lax**, your AI teacher for **Elementary (Grade 1–6)**, **Junior High (Grades 7–10)**, **Senior High (Grades 11–12: STEM, ABM, HUMSS, TVL)**, and **ALL College Courses**! 🌟\n\nAsk any education question—from basic reading, math, and DIY projects to Algebra, Physics, Practical Research, **College Calculus, Engineering, Programming/IT, Nursing, Accountancy, Education, Law, or Thesis**. Type below or tap **🎙️** to speak! ✏️🎓`,
       timestamp: 'Just now',
       suggestedFollowUps: [
-        'How do plants make food? (Photosynthesis in baby words)',
-        'Teach me how to add 25 + 18 easily',
-        'DIY Volcano project using zero money',
-        'College advice: How do I survive exams on a budget?',
+        'Elementary (Grade 1–6): How do plants make food? (Simple words)',
+        'Junior High (Grades 7–10): Solve a quadratic equation step-by-step',
+        'Senior High (STEM/ABM/HUMSS): Explain General Chemistry or Practical Research',
+        'College (All Courses): Explain SQL JOINs, Derivatives, ADPIE, or Debit vs Credit',
       ],
     },
   ]);
@@ -73,6 +73,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<ModeType>('homework');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('grade-1');
+  const [courseTrack, setCourseTrack] = useState<EducationCourseTrack>('all-subjects');
   const [isListening, setIsListening] = useState(false);
   const [activeSpeechId, setActiveSpeechId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -138,7 +139,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         gradeLevel,
         language,
         [...messages, userMsg],
-        isForceOffline
+        isForceOffline,
+        courseTrack
       );
 
       const botMsg: ChatMessage = {
@@ -296,19 +298,39 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           </button>
         </div>
 
-        {/* Grade level dropdown */}
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-700">
+        {/* Grade level & college course selector */}
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-stone-700">
           <GraduationCap size={15} className="text-amber-700" />
-          <span>Level:</span>
           <select
             value={gradeLevel}
             onChange={(e) => setGradeLevel(e.target.value as GradeLevel)}
+            aria-label="Education Level"
             className="bg-white border border-amber-300 rounded-lg px-2 py-1 text-xs font-bold text-amber-900 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
           >
-            <option value="grade-1">Grade 1 - 3 (Ultra Simple)</option>
-            <option value="grade-4">Grade 4 - 6 (Elementary)</option>
-            <option value="high-school">Junior / Senior High</option>
-            <option value="college">College Youth (Scholars)</option>
+            <option value="grade-1">Elementary (Grade 1–3)</option>
+            <option value="grade-4">Elementary (Grade 4–6)</option>
+            <option value="junior-high">Junior High School (Grades 7–10)</option>
+            <option value="senior-high">Senior High School (Grades 11–12)</option>
+            <option value="college">College (All Courses)</option>
+          </select>
+
+          <select
+            value={courseTrack}
+            onChange={(e) => setCourseTrack(e.target.value as EducationCourseTrack)}
+            aria-label="Subject or College Course"
+            className="bg-white border border-amber-300 rounded-lg px-2 py-1 text-xs font-bold text-stone-800 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+          >
+            <option value="all-subjects">All Subjects &amp; Courses</option>
+            <option value="elementary-core">Elementary Core (Grades 1–6)</option>
+            <option value="junior-high-core">Junior High Core (Grades 7–10)</option>
+            <option value="senior-high-strands">Senior High (STEM / ABM / HUMSS / TVL)</option>
+            <option value="stem-engineering">College STEM / Engineering / Math</option>
+            <option value="it-computer-science">College IT &amp; Computer Science</option>
+            <option value="nursing-health">College Nursing &amp; Health Sciences</option>
+            <option value="business-accountancy">College Accountancy &amp; Business</option>
+            <option value="education-let">College Education &amp; Board Prep</option>
+            <option value="law-humanities">College Law, Humanities &amp; Social Sci</option>
+            <option value="thesis-research">Research &amp; Thesis Writing</option>
           </select>
         </div>
       </div>
@@ -493,7 +515,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Sir Lax: homework question, DIY project, or math..."
+              placeholder="Ask any school or college course question (Math, Science, IT, Nursing, Accounting, Thesis)..."
               className="w-full bg-stone-100 hover:bg-stone-50 focus:bg-white text-stone-900 text-xs sm:text-sm rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium transition"
               disabled={loading}
             />

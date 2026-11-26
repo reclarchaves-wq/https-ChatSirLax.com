@@ -1,6 +1,18 @@
 export type LanguageMode = 'simple-english' | 'filipino' | 'bilingual';
-export type GradeLevel = 'grade-1' | 'grade-4' | 'high-school' | 'college';
+export type GradeLevel = 'grade-1' | 'grade-4' | 'junior-high' | 'senior-high' | 'college';
 export type ModeType = 'general' | 'homework' | 'diy' | 'math' | 'interactive';
+export type EducationCourseTrack =
+  | 'all-subjects'
+  | 'elementary-core'
+  | 'junior-high-core'
+  | 'senior-high-strands'
+  | 'stem-engineering'
+  | 'it-computer-science'
+  | 'nursing-health'
+  | 'business-accountancy'
+  | 'education-let'
+  | 'law-humanities'
+  | 'thesis-research';
 
 export interface ChatMessage {
   id: string;
