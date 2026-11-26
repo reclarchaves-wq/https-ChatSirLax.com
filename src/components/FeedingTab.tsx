@@ -245,6 +245,7 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
                 <img
                   src={drive.image}
                   alt={drive.title}
+                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover transform hover:scale-105 transition duration-500"
                 />
                 <span

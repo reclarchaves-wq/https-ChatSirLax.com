@@ -101,24 +101,38 @@
   "screenshots": [
     {
       "src": "/assets/screenshots/chat-mobile.jpg",
-      "sizes": "768x1376",
+      "sizes": "1080x1920",
       "type": "image/jpeg",
       "form_factor": "narrow",
-      "label": "Simple English AI Homework Tutor & Voice Assistant"
+      "label": "AI Tutor for Elementary, Junior High, Senior High & All College Courses"
     },
     {
       "src": "/assets/screenshots/streak-mobile.jpg",
-      "sizes": "768x1376",
+      "sizes": "1080x1920",
       "type": "image/jpeg",
       "form_factor": "narrow",
-      "label": "Daily Study Streak & 3-Day Flame Honor Badges"
+      "label": "Daily Study Streak & Honor Badges"
+    },
+    {
+      "src": "/assets/screenshots/studypacks-mobile.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Offline Study Packs & Zero-Cost DIY School Projects"
+    },
+    {
+      "src": "/assets/screenshots/feeding-mobile.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Community Feeding Programs & Meal Sponsorships"
     },
     {
       "src": "/assets/screenshots/desktop-wide.jpg",
       "sizes": "1376x768",
       "type": "image/jpeg",
       "form_factor": "wide",
-      "label": "Chat Sir Lax Desktop Tutor, Offline Study Packs & Hot Meals Counter"
+      "label": "Chat Sir Lax Desktop & Tablet View"
     }
   ],
   "share_target": {

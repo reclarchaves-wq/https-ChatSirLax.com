@@ -125,6 +125,7 @@ export const MediaGalleryTab: React.FC = () => {
                 <img
                   src={item.thumbnail}
                   alt={item.title}
+                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500"
                 />
 
@@ -234,6 +235,7 @@ export const MediaGalleryTab: React.FC = () => {
                   <img
                     src={activeMediaModal.thumbnail}
                     alt={activeMediaModal.title}
+                    referrerPolicy="no-referrer"
                     className="max-h-[400px] w-auto object-contain"
                   />
                 </div>
