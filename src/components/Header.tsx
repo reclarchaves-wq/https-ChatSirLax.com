@@ -1,7 +1,8 @@
 import React from 'react';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { Wifi, WifiOff, Volume2, Sparkles, HeartHandshake, ShieldCheck, Download, Trophy } from 'lucide-react';
+import { Wifi, WifiOff, Sparkles, HeartHandshake, ShieldCheck, Download, Trophy, Flame } from 'lucide-react';
 import { LanguageMode } from '../types';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface HeaderProps {
   isOffline: boolean;
@@ -13,6 +14,8 @@ interface HeaderProps {
   onOpenInstallModal: () => void;
   onOpenAchievements?: () => void;
   unlockedBadgesCount?: number;
+  currentStreak?: number;
+  solvedToday?: boolean;
   fontSize: 'normal' | 'large' | 'huge';
   setFontSize: (size: 'normal' | 'large' | 'huge') => void;
   mealsCount: number;
@@ -28,10 +31,14 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenInstallModal,
   onOpenAchievements,
   unlockedBadgesCount = 0,
+  currentStreak = 0,
+  solvedToday = false,
   fontSize,
   setFontSize,
   mealsCount,
 }) => {
+  const { isInstallable, isInstalled } = usePWAInstall();
+
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-md border-b-4 border-amber-300">
       {/* Top micro bar for offline & feeding emergency announcement */}
@@ -58,12 +65,18 @@ export const Header: React.FC<HeaderProps> = ({
             {isOffline ? 'Offline Mode Active' : 'Online'}
           </button>
 
-          <button
-            onClick={onOpenInstallModal}
-            className="hidden sm:inline-flex items-center gap-1 text-[11px] bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition cursor-pointer font-semibold"
-          >
-            <Download size={12} /> Install APK
-          </button>
+          {!isInstalled && (
+            <button
+              onClick={onOpenInstallModal}
+              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded transition cursor-pointer font-semibold ${
+                isInstallable
+                  ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-sm'
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+            >
+              <Download size={12} /> {isInstallable ? 'Install App' : 'Install / APK'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -142,6 +155,30 @@ export const Header: React.FC<HeaderProps> = ({
             <option value="filipino">🇵🇭 Tagalog / Filipino</option>
             <option value="bilingual">📖 Bilingual (EN + TL)</option>
           </select>
+
+          {/* Daily Study Streak Counter */}
+          {onOpenAchievements && (
+            <button
+              onClick={onOpenAchievements}
+              className={`flex items-center gap-1 text-xs sm:text-sm font-black px-2.5 py-1.5 rounded-xl shadow-sm transition transform hover:scale-105 cursor-pointer border ${
+                solvedToday
+                  ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-300'
+                  : 'bg-amber-800/70 hover:bg-amber-800 text-amber-100 border-amber-500/60'
+              }`}
+              title={
+                solvedToday
+                  ? `${currentStreak}-day study streak! Problem solved today.`
+                  : 'Solve 1 problem today to continue your Daily Study Streak!'
+              }
+            >
+              <Flame
+                size={15}
+                className={solvedToday ? 'text-yellow-200 fill-yellow-300' : 'text-amber-300'}
+              />
+              <span>{currentStreak}d</span>
+              <span className="hidden xl:inline text-[11px] font-bold opacity-90">Streak</span>
+            </button>
+          )}
 
           {/* Achievements Button */}
           {onOpenAchievements && (

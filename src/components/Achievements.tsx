@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { AchievementBadge, UserActivityStats, CommunityStats } from '../types';
+import { AchievementBadge, UserActivityStats, CommunityStats, StudyStreakState } from '../types';
 import { SIR_LAX_AVATAR } from '../data/mockData';
 import { SpeechService } from '../services/speechService';
+import { getRecentDaysIndicators } from '../utils/streakUtils';
 import confetti from 'canvas-confetti';
 import {
   Award,
@@ -22,13 +23,17 @@ import {
   ShieldCheck,
   Heart,
   Plus,
+  Flame,
+  Calendar,
 } from 'lucide-react';
 
 interface AchievementsProps {
   userStats: UserActivityStats;
   communityStats: CommunityStats;
+  streakState: StudyStreakState;
   onNavigateToTab: (tabKey: any) => void;
   onSolveHomeworkQuick: () => void;
+  onSimulateNextDay: () => void;
   onSponsorMealQuick: (count: number) => void;
   onWatchAdQuick: () => void;
 }
@@ -36,8 +41,10 @@ interface AchievementsProps {
 export const Achievements: React.FC<AchievementsProps> = ({
   userStats,
   communityStats,
+  streakState,
   onNavigateToTab,
   onSolveHomeworkQuick,
+  onSimulateNextDay,
   onSponsorMealQuick,
   onWatchAdQuick,
 }) => {
@@ -209,6 +216,47 @@ export const Achievements: React.FC<AchievementsProps> = ({
       rewardMotto: 'You proved that genius doesn\'t require money—only imagination and recycled bottles!',
       tag: 'Zero-Cost DIY Maker',
     },
+
+    // Daily Study Streak Milestones
+    {
+      id: 'streak-3',
+      title: '3-Day Study Streak Flame',
+      category: 'streak',
+      description: 'Open Chat Sir Lax and solve at least 1 problem for 3 consecutive days!',
+      icon: '🔥',
+      target: 3,
+      current: streakState.currentStreak,
+      unlocked: streakState.longestStreak >= 3 || streakState.currentStreak >= 3,
+      tier: 'gold',
+      rewardMotto: 'Three days in a row! Studying every day turns small steps into big dreams!',
+      tag: '3 Consecutive Days',
+    },
+    {
+      id: 'streak-7',
+      title: '7-Day Weekly Scholar',
+      category: 'streak',
+      description: 'Keep your Daily Study Streak alive by solving a problem every day for 7 days straight.',
+      icon: '📅',
+      target: 7,
+      current: streakState.currentStreak,
+      unlocked: streakState.longestStreak >= 7 || streakState.currentStreak >= 7,
+      tier: 'platinum',
+      rewardMotto: 'A full week of daily learning! Your family and teachers are so proud of you!',
+      tag: '7 Consecutive Days',
+    },
+    {
+      id: 'streak-14',
+      title: '14-Day Unstoppable Learner',
+      category: 'streak',
+      description: 'Solve at least 1 problem daily for 14 consecutive days without breaking your streak!',
+      icon: '🚀',
+      target: 14,
+      current: streakState.currentStreak,
+      unlocked: streakState.longestStreak >= 14 || streakState.currentStreak >= 14,
+      tier: 'platinum',
+      rewardMotto: 'Two unstoppable weeks! Education is truly your key for change!',
+      tag: '14 Consecutive Days',
+    },
   ];
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;
@@ -241,11 +289,16 @@ export const Achievements: React.FC<AchievementsProps> = ({
   const filteredBadges = badges.filter((b) => {
     if (selectedFilter === 'unlocked') return b.unlocked;
     if (selectedFilter === 'locked') return !b.unlocked;
+    if (selectedFilter === 'streak') return b.category === 'streak';
     if (selectedFilter === 'homework') return b.category === 'homework';
     if (selectedFilter === 'feeding') return b.category === 'feeding';
     if (selectedFilter === 'offline') return b.category === 'offline' || b.category === 'voice';
     return true;
   });
+
+  const recentDays = getRecentDaysIndicators(streakState, 7);
+  const solvedToday = streakState.todaySolvedCount > 0;
+  const threeDayBadge = badges.find((b) => b.id === 'streak-3')!;
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -335,6 +388,138 @@ export const Achievements: React.FC<AchievementsProps> = ({
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Study Streak Counter & 3-Day Consecutive Challenge */}
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-white rounded-3xl border-2 border-orange-300 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+          {/* Streak Counter Summary */}
+          <div className="flex items-start sm:items-center gap-4">
+            <div
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 shadow-md ${
+                solvedToday
+                  ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border-orange-300'
+                  : 'bg-white text-orange-600 border-orange-300'
+              }`}
+            >
+              <Flame
+                size={28}
+                className={solvedToday ? 'fill-yellow-200 text-yellow-100' : 'text-orange-500'}
+              />
+              <span className="text-lg sm:text-xl font-black leading-none font-['Fredoka',sans-serif]">
+                {streakState.currentStreak}
+              </span>
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-orange-200/80 text-orange-950 px-2.5 py-0.5 rounded-full">
+                  Daily Study Streak
+                </span>
+                {solvedToday ? (
+                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Solved {streakState.todaySolvedCount} Problem{streakState.todaySolvedCount > 1 ? 's' : ''} Today
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                    ⏳ Solve 1 problem today to earn your flame!
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-black text-stone-900 font-['Fredoka',sans-serif] mt-1">
+                {streakState.currentStreak === 0
+                  ? 'Start Your 3-Day Study Streak Today!'
+                  : streakState.currentStreak >= 3
+                  ? `Amazing! ${streakState.currentStreak} Consecutive Days Strong!`
+                  : `${streakState.currentStreak} Day Streak — ${3 - streakState.currentStreak} More Day${3 - streakState.currentStreak > 1 ? 's' : ''} for Your Badge!`}
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 mt-0.5">
+                Open Chat Sir Lax and solve at least 1 homework question or quiz for <strong>3 consecutive days</strong> to unlock the{' '}
+                <strong>3-Day Study Streak Flame</strong> badge! (Best streak: <strong>{streakState.longestStreak} days</strong>)
+              </p>
+            </div>
+          </div>
+
+          {/* 3-Day Progress & Quick Actions */}
+          <div className="w-full lg:w-auto min-w-[260px] bg-white rounded-2xl p-4 border border-orange-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-stone-700">3-Day Badge Goal:</span>
+              <span className={threeDayBadge.unlocked ? 'text-emerald-700' : 'text-orange-700'}>
+                {Math.min(streakState.currentStreak, 3)} / 3 Days ({Math.min(100, Math.round((streakState.currentStreak / 3) * 100))}%)
+              </span>
+            </div>
+
+            <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden p-0.5 border border-stone-200">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  threeDayBadge.unlocked ? 'bg-emerald-500' : 'bg-gradient-to-r from-orange-500 to-amber-400'
+                }`}
+                style={{ width: `${Math.min(100, (streakState.currentStreak / 3) * 100)}%` }}
+              ></div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <button
+                onClick={onSimulateNextDay}
+                className="flex-1 text-xs font-bold text-orange-800 hover:text-orange-950 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-xl border border-orange-200 transition flex items-center justify-center gap-1 cursor-pointer"
+                title="Simulate opening tomorrow and solving 1 problem to test the 3-day consecutive badge"
+              >
+                <Plus size={13} />
+                <span>Next Day + Solve</span>
+              </button>
+
+              {threeDayBadge.unlocked ? (
+                <button
+                  onClick={() => celebrateBadge(threeDayBadge)}
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles size={13} />
+                  <span>Celebrate!</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onNavigateToTab('chat')}
+                  className="bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Solve Now</span>
+                  <ChevronRight size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 7-Day Activity Calendar Strip */}
+        <div className="mt-5 pt-4 border-t border-orange-200/70">
+          <div className="flex items-center justify-between text-xs font-bold text-stone-600 mb-2.5">
+            <span className="flex items-center gap-1.5">
+              <Calendar size={14} className="text-orange-600" />
+              Last 7 Days Study Activity
+            </span>
+            <span className="text-[11px] text-stone-500">1+ problem solved = 🔥 Flame earned</span>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+            {recentDays.map((day) => (
+              <div
+                key={day.dateKey}
+                className={`rounded-2xl p-2 text-center border transition ${
+                  day.solved
+                    ? 'bg-orange-500 text-white border-orange-400 shadow-xs'
+                    : day.isToday
+                    ? 'bg-white text-orange-800 border-dashed border-2 border-orange-400'
+                    : 'bg-white/70 text-stone-400 border-stone-200'
+                }`}
+              >
+                <div className="text-[10px] sm:text-xs font-bold truncate">{day.label}</div>
+                <div className="text-base sm:text-lg mt-0.5">
+                  {day.solved ? '🔥' : day.isToday ? '✏️' : '·'}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -507,6 +692,7 @@ export const Achievements: React.FC<AchievementsProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
           {[
             { id: 'all', label: `All Badges (${totalCount})` },
+            { id: 'streak', label: '🔥 Streaks (3)' },
             { id: 'homework', label: '📚 Homework (4)' },
             { id: 'feeding', label: '🍲 Feeding & Impact (4)' },
             { id: 'offline', label: '📲 Offline & Voice (4)' },

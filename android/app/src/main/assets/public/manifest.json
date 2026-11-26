@@ -1,0 +1,133 @@
+{
+  "id": "/",
+  "name": "Chat Sir Lax - Simple AI Tutor & Community Hope",
+  "name_localized": {
+    "en": "Chat Sir Lax - Simple AI Tutor & Community Hope",
+    "fil": "Chat Sir Lax - Libreng AI Tutor at Pag-asa",
+    "tl": "Chat Sir Lax - Libreng AI Tutor at Pag-asa"
+  },
+  "short_name": "Chat Sir Lax",
+  "short_name_localized": {
+    "en": "Chat Sir Lax",
+    "fil": "Sir Lax",
+    "tl": "Sir Lax"
+  },
+  "description": "Free offline-ready AI tutor and voice assistant for Grade 1–6 pupils and struggling college youth. Solve homework step-by-step in Simple English, Tagalog, or Bilingual mode, download zero-data study packs and DIY school crafts, build a Daily Study Streak to earn honor badges, and help sponsor hot meals for hungry students.",
+  "dir": "ltr",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#fef3c7",
+  "theme_color": "#d97706",
+  "prefer_related_applications": false,
+  "categories": ["education", "kids", "social"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ask Sir Lax (Homework Help)",
+      "short_name": "Ask Sir Lax",
+      "description": "Start a homework question or voice chat with Sir Lax",
+      "url": "/?tab=chat",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Daily Study Streak & Badges",
+      "short_name": "Streaks",
+      "description": "Check your Daily Study Streak and unlock honor badges",
+      "url": "/?tab=achievements",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Offline Study Packs & DIY",
+      "short_name": "Study Packs",
+      "description": "Study Grade 1–6 lessons and DIY crafts with zero data",
+      "url": "/?tab=offline-packs",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Feeding Programs & Vouchers",
+      "short_name": "Feed Kids",
+      "description": "Sponsor hot meals and support hungry students",
+      "url": "/?tab=feeding",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/screenshots/chat-mobile.jpg",
+      "sizes": "768x1376",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Simple English AI Homework Tutor & Voice Assistant"
+    },
+    {
+      "src": "/assets/screenshots/streak-mobile.jpg",
+      "sizes": "768x1376",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Daily Study Streak & 3-Day Flame Honor Badges"
+    },
+    {
+      "src": "/assets/screenshots/desktop-wide.jpg",
+      "sizes": "1376x768",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Chat Sir Lax Desktop Tutor, Offline Study Packs & Hot Meals Counter"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

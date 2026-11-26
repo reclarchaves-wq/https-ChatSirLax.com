@@ -1,13 +1,20 @@
 import React from 'react';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { Heart, ShieldCheck, Download, Sparkles, BookOpen } from 'lucide-react';
+import { OFFICIAL_OWNER } from '../config/ownerConfig';
+import { GovernanceDocTab } from './LegalGovernanceModal';
+import { Heart, ShieldCheck, Download, UserCheck, Mail, Lock, Scale, FileText } from 'lucide-react';
 
 interface FooterProps {
   onOpenInstallModal: () => void;
   onOpenFeedModal: () => void;
+  onOpenGovernance: (tab: GovernanceDocTab) => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenInstallModal, onOpenFeedModal }) => {
+export const Footer: React.FC<FooterProps> = ({
+  onOpenInstallModal,
+  onOpenFeedModal,
+  onOpenGovernance,
+}) => {
   return (
     <footer className="bg-stone-900 text-stone-300 border-t-4 border-amber-500 pt-10 pb-20 px-4 mt-12">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -33,7 +40,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenInstallModal, onOpenFeedMo
             downloadable offline study packs, and community nourishment for pupils and struggling college scholars.
           </p>
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               onClick={onOpenInstallModal}
               className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs px-3.5 py-2 rounded-xl transition cursor-pointer shadow-sm"
@@ -63,23 +70,61 @@ export const Footer: React.FC<FooterProps> = ({ onOpenInstallModal, onOpenFeedMo
           </ul>
         </div>
 
-        {/* Mission & Social Impact */}
+        {/* Ownership & Governance */}
         <div>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-3">
-            Social Impact Mission
+            Official Ownership &amp; Policies
           </h4>
-          <ul className="space-y-2 text-xs text-stone-400">
-            <li>&bull; Hot Arroz Caldo &amp; Egg Feeding Drives</li>
-            <li>&bull; College Youth Dorm Midnight Exam Pantries</li>
-            <li>&bull; Responsible Ad Units Monetization Model</li>
-            <li>&bull; Barangay Community Learning Hubs</li>
-            <li>&bull; Free Printable Formula Flashcards</li>
-          </ul>
+          <div className="space-y-2 text-xs text-stone-300">
+            <div className="flex items-start gap-1.5">
+              <UserCheck size={14} className="text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-white">{OFFICIAL_OWNER.fullName}</div>
+                <div className="text-[11px] text-stone-400">Founder &amp; Rightful Owner</div>
+              </div>
+            </div>
+            <a
+              href={`mailto:${OFFICIAL_OWNER.email}`}
+              className="inline-flex items-center gap-1.5 text-[11px] text-amber-300 hover:text-amber-200 underline"
+            >
+              <Mail size={12} /> {OFFICIAL_OWNER.email}
+            </a>
+
+            <div className="pt-2 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => onOpenGovernance('owner')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-[11px] font-semibold text-stone-200 transition cursor-pointer"
+              >
+                <UserCheck size={11} className="text-amber-400" /> Owner Info
+              </button>
+              <button
+                onClick={() => onOpenGovernance('donations')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-[11px] font-semibold text-stone-200 transition cursor-pointer"
+              >
+                <Scale size={11} className="text-rose-400" /> Fund Governance
+              </button>
+              <button
+                onClick={() => onOpenGovernance('privacy')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-[11px] font-semibold text-stone-200 transition cursor-pointer"
+              >
+                <Lock size={11} className="text-emerald-400" /> Privacy Policy
+              </button>
+              <button
+                onClick={() => onOpenGovernance('terms')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-[11px] font-semibold text-stone-200 transition cursor-pointer"
+              >
+                <FileText size={11} className="text-sky-400" /> Terms
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto border-t border-stone-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 gap-3">
-        <p>&copy; {new Date().getFullYear()} Chat Sir Lax. Built with deep love for Filipino learners and students worldwide.</p>
+        <p>
+          &copy; {new Date().getFullYear()} Chat Sir Lax &bull; Owned &amp; Operated by{' '}
+          <strong className="text-stone-300">{OFFICIAL_OWNER.fullName}</strong> ({OFFICIAL_OWNER.country}).
+        </p>
         <p className="flex items-center gap-1 text-amber-400 font-semibold">
           <ShieldCheck size={14} /> 100% Free Core Educational Service
         </p>

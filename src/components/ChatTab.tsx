@@ -53,7 +53,23 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     },
   ]);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    const sharedParts = [params.get('q'), params.get('title'), params.get('text'), params.get('url')]
+      .map((val) => val?.trim())
+      .filter((val): val is string => Boolean(val));
+    return sharedParts.join(' — ');
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('q') || params.has('title') || params.has('text') || params.has('url')) {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<ModeType>('homework');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('grade-1');
@@ -134,7 +150,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
       setMessages((prev) => [...prev, botMsg]);
 
-      // If user asked a math problem or completed homework, reward them!
+      // Count every solved question toward Daily Study Streak and Homework milestones
+      if (onSolveHomework) onSolveHomework();
+
+      // Trigger celebration confetti on math, DIY, or explicit homework queries
       if (
         text.includes('+') ||
         text.includes('-') ||
@@ -143,7 +162,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         text.includes('homework')
       ) {
         triggerConfetti();
-        if (onSolveHomework) onSolveHomework();
       }
     } catch (err) {
       console.error('Chat error:', err);

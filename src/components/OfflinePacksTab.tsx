@@ -21,12 +21,14 @@ import {
 interface OfflinePacksTabProps {
   packs: OfflineStudyPack[];
   onToggleDownload: (packId: string) => void;
+  onSolveHomework?: () => void;
   fontSize: 'normal' | 'large' | 'huge';
 }
 
 export const OfflinePacksTab: React.FC<OfflinePacksTabProps> = ({
   packs,
   onToggleDownload,
+  onSolveHomework,
   fontSize,
 }) => {
   const [selectedPackId, setSelectedPackId] = useState<string>(packs[0]?.id || '');
@@ -49,11 +51,12 @@ export const OfflinePacksTab: React.FC<OfflinePacksTabProps> = ({
   };
 
   const toggleQuizAnswer = (key: string) => {
-    setRevealedQuiz((prev) => {
-      const nextState = !prev[key];
-      if (nextState) triggerConfetti();
-      return { ...prev, [key]: nextState };
-    });
+    const nextState = !revealedQuiz[key];
+    setRevealedQuiz((prev) => ({ ...prev, [key]: nextState }));
+    if (nextState) {
+      triggerConfetti();
+      if (onSolveHomework) onSolveHomework();
+    }
   };
 
   const handleSpeakLesson = () => {

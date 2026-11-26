@@ -16,6 +16,26 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
+// Allow Capacitor APK WebView origins (https://localhost, capacitor://localhost)
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (
+    origin &&
+    (origin === 'https://localhost' ||
+      origin === 'http://localhost' ||
+      origin === 'capacitor://localhost' ||
+      origin.startsWith('http://localhost:'))
+  ) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 // Initialize Google GenAI if real key is present
 const rawApiKey = process.env.GEMINI_API_KEY || '';
 const isValidKey = rawApiKey && !rawApiKey.startsWith('MY_') && rawApiKey.trim().length > 10;
@@ -206,6 +226,36 @@ function generateSmartFallbackReply(query: string, mode: string, _gradeLevel: st
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+// Serve W3C Web Application Manifest with standard application/manifest+json MIME type
+const serveManifest = (_req: express.Request, res: express.Response) => {
+  const distManifest = path.resolve(__dirname, 'dist', 'manifest.json');
+  const publicManifest = path.resolve(__dirname, 'public', 'manifest.json');
+  const manifestPath = process.env.NODE_ENV === 'production' ? distManifest : publicManifest;
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(manifestPath, (err) => {
+    if (err && manifestPath !== publicManifest) {
+      res.sendFile(publicManifest);
+    }
+  });
+};
+
+app.get('/manifest.json', serveManifest);
+app.get('/manifest.webmanifest', serveManifest);
+
+app.get('/sw.js', (_req, res) => {
+  const distSw = path.resolve(__dirname, 'dist', 'sw.js');
+  const publicSw = path.resolve(__dirname, 'public', 'sw.js');
+  const swPath = process.env.NODE_ENV === 'production' ? distSw : publicSw;
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(swPath, (err) => {
+    if (err && swPath !== publicSw) {
+      res.sendFile(publicSw);
+    }
+  });
 });
 
 // Development or Production static serving

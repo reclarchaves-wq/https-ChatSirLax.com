@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FeedingProgramDrive, CommunityStats } from '../types';
 import { MOCK_FEEDING_DRIVES } from '../data/mockData';
+import { OFFICIAL_OWNER } from '../config/ownerConfig';
+import { GovernanceDocTab } from './LegalGovernanceModal';
 import confetti from 'canvas-confetti';
 import {
   UtensilsCrossed,
@@ -17,21 +19,26 @@ import {
   HelpCircle,
   Coffee,
   Egg,
+  ShieldCheck,
+  Mail,
 } from 'lucide-react';
 
 interface FeedingTabProps {
   stats: CommunityStats;
   onSponsorMeal: (count: number, donorName?: string) => void;
   onWatchAdToFeed: () => void;
+  onOpenGovernance?: (tab: GovernanceDocTab) => void;
 }
 
 export const FeedingTab: React.FC<FeedingTabProps> = ({
   stats,
   onSponsorMeal,
   onWatchAdToFeed,
+  onOpenGovernance,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'children' | 'college'>('all');
   const [assistanceSubmitted, setAssistanceSubmitted] = useState(false);
+  const [voucherCode, setVoucherCode] = useState('');
   const [assistanceName, setAssistanceName] = useState('');
   const [assistanceSchool, setAssistanceSchool] = useState('');
   const [assistanceLevel, setAssistanceLevel] = useState('College Youth (Working Student)');
@@ -50,6 +57,7 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
   const handleAssistanceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assistanceName.trim()) return;
+    setVoucherCode(`#LAX-CARE-${Math.floor(1000 + Math.random() * 9000)}`);
     setAssistanceSubmitted(true);
     try {
       confetti({
@@ -161,6 +169,32 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
             <div className="text-xs font-semibold text-stone-500">Community Feeding Hubs</div>
           </div>
         </div>
+      </div>
+
+      {/* Official Owner & Fund Stewardship Notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="text-xs text-stone-700 space-y-0.5">
+            <div className="font-black text-stone-900">
+              Official Program Owner &amp; Fund Steward: {OFFICIAL_OWNER.fullName}
+            </div>
+            <p>
+              {OFFICIAL_OWNER.policies.verificationNotice}
+            </p>
+          </div>
+        </div>
+        {onOpenGovernance && (
+          <button
+            type="button"
+            onClick={() => onOpenGovernance('donations')}
+            className="shrink-0 px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition cursor-pointer"
+          >
+            View Donation Policy
+          </button>
+        )}
       </div>
 
       {/* Target Audience Tabs */}
@@ -355,22 +389,35 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
           </p>
 
           {assistanceSubmitted ? (
-            <div className="mt-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+            <div className="mt-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-3">
               <div className="flex items-center gap-2 font-bold text-sm">
                 <CheckCircle2 size={18} className="text-emerald-600" />
                 <span>Assistance Request Received, {assistanceName}!</span>
               </div>
-              <p className="text-xs mt-1 text-emerald-700">
-                Your digital voucher code is <strong>#LAX-CARE-{Math.floor(1000 + Math.random() * 9000)}</strong>.
-                Show this code or tell your name at any Community Barangay Feeding Hub or Campus Pantry to receive
-                free hot meals. Kuya Sir Lax is rooting for you!
+              <p className="text-xs text-emerald-700">
+                Your digital voucher code is <strong>{voucherCode}</strong>.
+                Show this code or send it to rightful owner <strong>{OFFICIAL_OWNER.fullName}</strong> so it can
+                be verified with your local Community Barangay Feeding Hub or Campus Pantry.
               </p>
-              <button
-                onClick={() => setAssistanceSubmitted(false)}
-                className="mt-3 text-xs text-emerald-800 underline font-bold cursor-pointer"
-              >
-                Submit another request
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`mailto:${OFFICIAL_OWNER.email}?subject=${encodeURIComponent(
+                    `Student Meal Voucher ${voucherCode} - ${assistanceName}`
+                  )}&body=${encodeURIComponent(
+                    `Voucher Code: ${voucherCode}\nStudent Name: ${assistanceName}\nSchool / Barangay: ${assistanceSchool}\nLevel: ${assistanceLevel}\nNotes: ${assistanceNote || 'None'}`
+                  )}`}
+                  className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition"
+                >
+                  <Mail size={13} />
+                  <span>Email Voucher to {OFFICIAL_OWNER.fullName}</span>
+                </a>
+                <button
+                  onClick={() => setAssistanceSubmitted(false)}
+                  className="text-xs text-emerald-800 underline font-bold cursor-pointer px-2 py-1"
+                >
+                  Submit another request
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleAssistanceSubmit} className="mt-4 space-y-3">
@@ -492,8 +539,14 @@ export const FeedingTab: React.FC<FeedingTabProps> = ({
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-950 font-medium">
-                💡 Or watch a sponsored video ad to feed students completely free!
+              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-950 font-medium space-y-1">
+                <div>💡 Watch a sponsored video ad to feed students completely free, or record a community meal pledge.</div>
+                <div className="text-[11px] text-amber-800">
+                  Stewarded by <strong>{OFFICIAL_OWNER.fullName}</strong> &bull; Verified outreach coordination:{' '}
+                  <a href={`mailto:${OFFICIAL_OWNER.email}`} className="underline font-bold">
+                    {OFFICIAL_OWNER.email}
+                  </a>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 pt-2">

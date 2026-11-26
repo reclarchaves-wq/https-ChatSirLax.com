@@ -1,5 +1,19 @@
 import { ChatMessage, GradeLevel, LanguageMode, ModeType } from '../types';
 
+export function getApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_BASE_URL;
+  if (configured) return configured.replace(/\/$/, '');
+  if (typeof window !== 'undefined') {
+    const isCapacitor =
+      window.location.protocol === 'capacitor:' ||
+      !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isCapacitor) {
+      return 'https://ais-pre-zny3pqynnj3ze7qcc35dln-843808826475.asia-east1.run.app';
+    }
+  }
+  return '';
+}
+
 export async function sendChatMessage(
   message: string,
   mode: ModeType,
@@ -21,7 +35,7 @@ export async function sendChatMessage(
   }
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch(`${getApiBaseUrl()}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

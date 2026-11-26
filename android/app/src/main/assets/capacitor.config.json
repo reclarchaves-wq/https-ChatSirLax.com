@@ -1,0 +1,13 @@
+{
+	"appId": "com.chatsirlax.app",
+	"appName": "Chat Sir Lax",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true
+	},
+	"android": {
+		"allowMixedContent": true,
+		"backgroundColor": "#fef3c7"
+	}
+}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CommunityStats } from '../types';
+import { OFFICIAL_OWNER } from '../config/ownerConfig';
+import { GovernanceDocTab } from './LegalGovernanceModal';
 import confetti from 'canvas-confetti';
 import {
   Key,
@@ -16,14 +18,20 @@ import {
   Heart,
   BarChart,
   DollarSign,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface AdUnitsTabProps {
   stats: CommunityStats;
   onWatchAdToFeed: () => void;
+  onOpenGovernance?: (tab: GovernanceDocTab) => void;
 }
 
-export const AdUnitsTab: React.FC<AdUnitsTabProps> = ({ stats, onWatchAdToFeed }) => {
+export const AdUnitsTab: React.FC<AdUnitsTabProps> = ({
+  stats,
+  onWatchAdToFeed,
+  onOpenGovernance,
+}) => {
   const [appId, setAppId] = useState(
     () => localStorage.getItem('csl_admob_app_id') || 'ca-app-pub-71829304918234~918273645'
   );
@@ -91,6 +99,30 @@ export const AdUnitsTab: React.FC<AdUnitsTabProps> = ({ stats, onWatchAdToFeed }
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Rightful Owner Governance Strip */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-stone-900 text-amber-400 flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="text-xs text-stone-700 space-y-0.5">
+            <div className="font-black text-stone-900">
+              Authorized Ad &amp; Sponsorship Steward: {OFFICIAL_OWNER.fullName} ({OFFICIAL_OWNER.email})
+            </div>
+            <p>{OFFICIAL_OWNER.policies.conflictOfInterest}</p>
+          </div>
+        </div>
+        {onOpenGovernance && (
+          <button
+            type="button"
+            onClick={() => onOpenGovernance('owner')}
+            className="shrink-0 px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition cursor-pointer"
+          >
+            Owner &amp; Governance
+          </button>
+        )}
       </div>
 
       {/* Secret Key & Ad Units Config Form */}

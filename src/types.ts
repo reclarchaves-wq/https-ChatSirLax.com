@@ -77,10 +77,19 @@ export interface UserActivityStats {
   diyProjectsViewed: number;
 }
 
+export interface StudyStreakState {
+  currentStreak: number;
+  longestStreak: number;
+  lastSolvedDate: string | null; // YYYY-MM-DD local date
+  lastOpenedDate: string | null; // YYYY-MM-DD local date
+  solvedDates: string[]; // Recent YYYY-MM-DD dates with >= 1 solved problem
+  todaySolvedCount: number;
+}
+
 export interface AchievementBadge {
   id: string;
   title: string;
-  category: 'homework' | 'feeding' | 'offline' | 'voice' | 'community';
+  category: 'homework' | 'feeding' | 'offline' | 'voice' | 'community' | 'streak';
   description: string;
   icon: string;
   target: number;
