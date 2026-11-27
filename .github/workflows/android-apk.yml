@@ -1,4 +1,4 @@
-name: Build Chat Sir Lax Android APK
+name: Build Chat Sir Lax Android APK & Store Bundle
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,24 +29,54 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies and build web bundle
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: |
           npm ci
           npm run build
           npx cap sync android
 
+      - name: Decode optional release signing keystore
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+          echo "KEYSTORE_FILE=release-keystore.jks" >> $GITHUB_ENV
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Build Debug APK
+      - name: Build Store AAB & Direct Install APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleDebug bundleRelease assembleRelease
 
-      - name: Rename APK output
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk ChatSirLax-v2.4.0.apk
+      - name: Prepare store and student download artifacts
+        run: |
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk ChatSirLax-v2.4.0.apk
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk ChatSirLax-v2.4.0.apk
+          fi
+          cp android/app/build/outputs/bundle/release/app-release.aab ChatSirLax-v2.4.0-playstore.aab
 
-      - name: Upload Chat Sir Lax APK artifact
+      - name: Upload Direct & Free-Store APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ChatSirLax-Android-APK
           path: ChatSirLax-v2.4.0.apk
+          retention-days: 90
+
+      - name: Upload Google Play Store AAB bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChatSirLax-PlayStore-AAB
+          path: ChatSirLax-v2.4.0-playstore.aab
           retention-days: 90

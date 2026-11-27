@@ -225,31 +225,31 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
                   <div className="bg-white p-3 rounded-xl border border-amber-200 space-y-1.5">
                     <div className="font-black text-stone-900 flex items-center gap-1.5">
                       <Terminal size={14} className="text-amber-600" />
-                      <span>Option A: Auto-Build APK via GitHub Actions</span>
+                      <span>Option A: Free Store .AAB &amp; Student .APK (GitHub Actions)</span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
-                      A native Capacitor Android project (<code>/android</code>) and workflow (<code>.github/workflows/android-apk.yml</code>) are ready in this repository. Push to GitHub <code>main</code>, open the <strong>Actions</strong> tab, and download <strong>ChatSirLax-Android-APK</strong>.
+                      Push to GitHub <code>main</code> and open the <strong>Actions</strong> tab to download both <strong>ChatSirLax-Android-APK</strong> (for direct student sideloading, Amazon Appstore, and Samsung Galaxy Store) and <strong>ChatSirLax-PlayStore-AAB</strong> (for Google Play Console). Add signing secrets for store-signed release builds.
                     </p>
                   </div>
 
                   <div className="bg-white p-3 rounded-xl border border-stone-200 space-y-1.5">
-                    <div className="font-black text-stone-900">Option B: Build Locally in Android Studio</div>
+                    <div className="font-black text-stone-900">Option B: Build Signed .APK / .AAB in Android Studio</div>
                     <pre className="bg-stone-900 text-amber-300 p-2 rounded-lg text-[10px] font-mono overflow-x-auto">
 {`npm run build:android
-cd android && ./gradlew assembleDebug`}
+cd android && ./gradlew assembleDebug bundleRelease`}
                     </pre>
                     <p className="text-[11px] text-stone-500">
-                      Output APK: <code>android/app/build/outputs/apk/debug/app-debug.apk</code>
+                      Outputs: <code>app-debug.apk</code> (direct install) &amp; <code>app-release.aab</code> (Google Play).
                     </p>
                   </div>
 
                   <div className="bg-white p-3 rounded-xl border border-sky-200 space-y-1.5">
                     <div className="font-black text-stone-900 flex items-center justify-between">
-                      <span>Option C: PWABuilder Play Store .AAB / .APK</span>
+                      <span>Option C: Always-Awake $0 Vercel Hosting + PWABuilder</span>
                       <ExternalLink size={12} className="text-sky-600" />
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
-                      Deploy publicly (with <strong>no login wall</strong>, e.g. Cloud Run public access), paste that public URL at <strong>pwabuilder.com</strong>, and click <strong>Package for Stores &rarr; Android</strong>. Use <code>/?doc=privacy</code> as your Play Store Privacy Policy link.
+                      Deploy this repo on <strong>Vercel ($0/mo Hobby)</strong> with <code>GEMINI_API_KEY</code> in Environment Variables—zero sleep delay, so <strong>pwabuilder.com</strong> reads <code>/manifest.json</code> and <code>/sw.js</code> immediately. Set Privacy Policy to <code>/?doc=privacy</code>.
                     </p>
                   </div>
                 </div>

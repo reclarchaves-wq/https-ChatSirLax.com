@@ -8,7 +8,7 @@ export function getApiBaseUrl(): string {
       window.location.protocol === 'capacitor:' ||
       !!(window as any).Capacitor?.isNativePlatform?.();
     if (isCapacitor) {
-      return 'https://ais-pre-zny3pqynnj3ze7qcc35dln-843808826475.asia-east1.run.app';
+      return 'https://https-chatsirlax-org.onrender.com';
     }
   }
   return '';
@@ -34,10 +34,14 @@ export async function sendChatMessage(
     };
   }
 
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 22000) : null;
+
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller?.signal,
       body: JSON.stringify({
         message,
         mode,
@@ -66,6 +70,8 @@ export async function sendChatMessage(
       isOffline: true,
       source: 'offline-emergency-engine',
     };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
