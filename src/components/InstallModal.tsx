@@ -245,11 +245,11 @@ cd android && ./gradlew assembleDebug bundleRelease`}
 
                   <div className="bg-white p-3 rounded-xl border border-sky-200 space-y-1.5">
                     <div className="font-black text-stone-900 flex items-center justify-between">
-                      <span>Option C: Always-Awake $0 Vercel Hosting + PWABuilder</span>
+                      <span>Option C: Always-Awake Vercel Hosting + PWABuilder</span>
                       <ExternalLink size={12} className="text-sky-600" />
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
-                      Deploy this repo on <strong>Vercel ($0/mo Hobby)</strong> with <code>GEMINI_API_KEY</code> in Environment Variables—zero sleep delay, so <strong>pwabuilder.com</strong> reads <code>/manifest.json</code> and <code>/sw.js</code> immediately. Set Privacy Policy to <code>/?doc=privacy</code>.
+                      Paste <strong>https://https-chat-sir-lax-com.vercel.app</strong> into <strong>pwabuilder.com</strong> and click <strong>Package for Stores &rarr; Android</strong>. Set your store Privacy Policy to <code>https://https-chat-sir-lax-com.vercel.app/?doc=privacy</code>.
                     </p>
                   </div>
                 </div>

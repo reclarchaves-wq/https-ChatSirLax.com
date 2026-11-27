@@ -8,7 +8,7 @@ export function getApiBaseUrl(): string {
       window.location.protocol === 'capacitor:' ||
       !!(window as any).Capacitor?.isNativePlatform?.();
     if (isCapacitor) {
-      return 'https://https-chatsirlax-org.onrender.com';
+      return 'https://https-chat-sir-lax-com.vercel.app';
     }
   }
   return '';
