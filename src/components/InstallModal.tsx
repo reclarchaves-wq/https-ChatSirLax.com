@@ -245,11 +245,11 @@ cd android && ./gradlew assembleDebug bundleRelease`}
 
                   <div className="bg-white p-3 rounded-xl border border-sky-200 space-y-1.5">
                     <div className="font-black text-stone-900 flex items-center justify-between">
-                      <span>Option C: Always-Awake Vercel Hosting + PWABuilder</span>
+                      <span>Option C: Published App URL + PWABuilder</span>
                       <ExternalLink size={12} className="text-sky-600" />
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
-                      Paste <strong>https://https-chat-sir-lax-com.vercel.app</strong> into <strong>pwabuilder.com</strong> and click <strong>Package for Stores &rarr; Android</strong>. Set your store Privacy Policy to <code>https://https-chat-sir-lax-com.vercel.app/?doc=privacy</code>.
+                      Paste <strong>{typeof window !== 'undefined' ? window.location.origin : 'your published app URL'}</strong> into <strong>pwabuilder.com</strong> and click <strong>Package for Stores &rarr; Android</strong>. Set your store Privacy Policy to <code>{typeof window !== 'undefined' ? `${window.location.origin}/?doc=privacy` : '/?doc=privacy'}</code>.
                     </p>
                   </div>
                 </div>

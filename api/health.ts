@@ -18,18 +18,23 @@ export default function handler(req: any, res: any) {
     return res.status(204).end();
   }
 
+  const geminiKey = [
+    process.env.GEMINI_API_KEY,
+    process.env.Gemini_Api_key,
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+  ]
+    .map((v) => (v || '').trim().replace(/^["']|["']$/g, ''))
+    .find((v) => v.length > 10 && !v.startsWith('MY_'));
+
+  const openAiKey = (process.env.OPENAI_API_KEY || '')
+    .trim()
+    .replace(/^["']|["']$/g, '');
+
   return res.status(200).json({
     status: 'ok',
-    geminiConfigured: Boolean(
-      process.env.GEMINI_API_KEY &&
-        !process.env.GEMINI_API_KEY.startsWith('MY_') &&
-        process.env.GEMINI_API_KEY.trim().length > 10
-    ),
-    openaiConfigured: Boolean(
-      process.env.OPENAI_API_KEY &&
-        !process.env.OPENAI_API_KEY.startsWith('MY_') &&
-        process.env.OPENAI_API_KEY.trim().length > 10
-    ),
+    geminiConfigured: Boolean(geminiKey),
+    openaiConfigured: Boolean(openAiKey.length > 10 && !openAiKey.startsWith('MY_')),
     time: new Date().toISOString(),
   });
 }

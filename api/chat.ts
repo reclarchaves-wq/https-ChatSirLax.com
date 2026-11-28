@@ -42,8 +42,24 @@ class TutorApiError extends Error {
   }
 }
 
-function createGeminiClient(apiKey = process.env.GEMINI_API_KEY || ''): GoogleGenAI | null {
-  const trimmed = apiKey.trim();
+function getConfiguredGeminiApiKey(): string {
+  const candidates = [
+    process.env.GEMINI_API_KEY,
+    process.env.Gemini_Api_key,
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+  ];
+  for (const raw of candidates) {
+    const trimmed = (raw || '').trim().replace(/^["']|["']$/g, '');
+    if (trimmed.length > 10 && !trimmed.startsWith('MY_')) {
+      return trimmed;
+    }
+  }
+  return '';
+}
+
+function createGeminiClient(apiKey?: string): GoogleGenAI | null {
+  const trimmed = (apiKey ?? getConfiguredGeminiApiKey()).trim().replace(/^["']|["']$/g, '');
   const isValidKey = trimmed.length > 10 && !trimmed.startsWith('MY_');
   if (!isValidKey) return null;
 
