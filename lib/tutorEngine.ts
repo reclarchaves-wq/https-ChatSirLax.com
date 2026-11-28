@@ -129,6 +129,10 @@ Rules:
 }
 
 function formatReadableGeminiError(err: any): { message: string; statusCode: number } {
+  if (err instanceof TutorApiError) {
+    return { message: err.message, statusCode: err.statusCode };
+  }
+
   const statusCode =
     typeof err?.status === 'number'
       ? err.status
