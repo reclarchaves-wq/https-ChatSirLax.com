@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { Header } from './components/Header';
 import { Navigation, TabKey } from './components/Navigation';
 import { ChatTab } from './components/ChatTab';
+import { RegisterTab } from './components/RegisterTab';
 import { OfflinePacksTab } from './components/OfflinePacksTab';
 import { FeedingTab } from './components/FeedingTab';
 import { MediaGalleryTab } from './components/MediaGalleryTab';
@@ -19,8 +21,21 @@ import { LegalGovernanceModal, GovernanceDocTab } from './components/LegalGovern
 import { BottomBannerAd } from './components/BottomBannerAd';
 import { Footer } from './components/Footer';
 import { INITIAL_COMMUNITY_STATS, INITIAL_OFFLINE_PACKS } from './data/mockData';
-import { CommunityStats, LanguageMode, OfflineStudyPack, StudyStreakState, UserActivityStats } from './types';
-import { getApiBaseUrl } from './services/chatService';
+import {
+  ChatMessage,
+  CommunityStats,
+  LanguageMode,
+  OfflineStudyPack,
+  StudentProfile,
+  StudyStreakState,
+  UserActivityStats,
+} from './types';
+import { auth } from './firebase';
+import {
+  subscribeStudentMessages,
+  subscribeStudentProfile,
+} from './services/studentProfileService';
+import { checkServerHealth, getApiBaseUrl } from './services/chatService';
 import { SpeechService } from './services/speechService';
 import {
   createInitialStreakState,
@@ -32,6 +47,7 @@ import confetti from 'canvas-confetti';
 
 const VALID_TABS: TabKey[] = [
   'chat',
+  'register',
   'offline-packs',
   'feeding',
   'media',
@@ -53,8 +69,15 @@ export default function App() {
   const [isOffline, setIsOffline] = useState<boolean>(() => {
     return typeof navigator !== 'undefined' ? !navigator.onLine : false;
   });
+  const [geminiReady, setGeminiReady] = useState<boolean>(true);
   const [language, setLanguage] = useState<LanguageMode>('simple-english');
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'huge'>('normal');
+
+  // Firebase Student Auth & Memory state
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [savedMessages, setSavedMessages] = useState<ChatMessage[]>([]);
 
   // Stats state
   const [stats, setStats] = useState<CommunityStats>(() => {
@@ -157,16 +180,82 @@ export default function App() {
     setIsGovernanceModalOpen(true);
   };
 
-  // Sync online/offline events
+  const syncOnlineStatus = useCallback(async () => {
+    const browserSaysOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (browserSaysOffline) {
+      setIsOffline(true);
+      return;
+    }
+    setIsOffline(false);
+    const health = await checkServerHealth(4000);
+    if (health.online) {
+      setIsOffline(false);
+      setGeminiReady(health.geminiConfigured || health.openaiConfigured);
+    }
+  }, []);
+
+  // Firebase Auth & Student Memory Subscriptions
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      setAuthLoading(false);
+      if (!user) {
+        setStudentProfile(null);
+        setSavedMessages([]);
+      }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!authUser) return;
+    const unsubProfile = subscribeStudentProfile(
+      authUser.uid,
+      (profile) => {
+        setStudentProfile(profile);
+        if (profile?.preferredLanguage) {
+          setLanguage(profile.preferredLanguage);
+        }
+      },
+      (err) => console.warn('Student profile listener note:', err.message)
+    );
+
+    const unsubMessages = subscribeStudentMessages(
+      authUser.uid,
+      (msgs) => {
+        setSavedMessages(msgs);
+      },
+      (err) => console.warn('Student messages listener note:', err.message)
+    );
+
+    return () => {
+      unsubProfile();
+      unsubMessages();
+    };
+  }, [authUser]);
+
+  // Keep online status alert at all times via live heartbeat + browser events
+  useEffect(() => {
+    syncOnlineStatus();
+
+    const handleOnline = () => {
+      setIsOffline(false);
+      syncOnlineStatus();
+    };
     const handleOffline = () => setIsOffline(true);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    const handleDaySync = () => {
+    const heartbeatId = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
+        syncOnlineStatus();
+      }
+    }, 25000);
+
+    const handleDayAndConnectivitySync = () => {
+      if (document.visibilityState === 'visible') {
+        syncOnlineStatus();
         setStreakState((prev) => {
           const synced = syncStreakOnOpen(prev);
           if (
@@ -182,16 +271,17 @@ export default function App() {
       }
     };
 
-    window.addEventListener('focus', handleDaySync);
-    document.addEventListener('visibilitychange', handleDaySync);
+    window.addEventListener('focus', handleDayAndConnectivitySync);
+    document.addEventListener('visibilitychange', handleDayAndConnectivitySync);
 
     return () => {
+      window.clearInterval(heartbeatId);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('focus', handleDaySync);
-      document.removeEventListener('visibilitychange', handleDaySync);
+      window.removeEventListener('focus', handleDayAndConnectivitySync);
+      document.removeEventListener('visibilitychange', handleDayAndConnectivitySync);
     };
-  }, []);
+  }, [syncOnlineStatus]);
 
   // Fetch live stats from server if online
   useEffect(() => {
@@ -441,7 +531,10 @@ export default function App() {
       {/* Header */}
       <Header
         isOffline={isOffline}
-        setIsOffline={setIsOffline}
+        geminiReady={geminiReady}
+        studentName={studentProfile?.displayName || authUser?.displayName || undefined}
+        isSignedIn={Boolean(authUser)}
+        onOpenRegister={() => setActiveTab('register')}
         language={language}
         setLanguage={setLanguage}
         fontSize={fontSize}
@@ -462,6 +555,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         downloadedCount={downloadedCount}
         unlockedBadgesCount={unlockedBadgesCount}
+        studentName={studentProfile?.displayName || authUser?.displayName || undefined}
       />
 
       {/* Streak Celebration Banner */}
@@ -496,8 +590,25 @@ export default function App() {
           <ChatTab
             language={language}
             fontSize={fontSize}
-            isForceOffline={isOffline}
             onSolveHomework={handleSolveHomework}
+            authUser={authUser}
+            studentProfile={studentProfile}
+            savedMessages={savedMessages}
+            isOffline={isOffline}
+            geminiReady={geminiReady}
+            onOpenRegister={() => setActiveTab('register')}
+          />
+        )}
+
+        {activeTab === 'register' && (
+          <RegisterTab
+            authUser={authUser}
+            authLoading={authLoading}
+            studentProfile={studentProfile}
+            currentLanguage={language}
+            savedMessagesCount={savedMessages.length}
+            onProfileSaved={(preferredLanguage) => setLanguage(preferredLanguage)}
+            onOpenChat={() => setActiveTab('chat')}
           />
         )}
 

@@ -14,6 +14,15 @@ export const COURSE_TRACK_LABELS: Record<string, string> = {
   'thesis-research': 'Academic Research, Practical Research, Thesis/Capstone Writing, RRL, Methodology & Statistics',
 };
 
+export interface StudentMemoryContext {
+  displayName?: string;
+  gradeLevel?: string;
+  courseTrack?: string;
+  preferredLanguage?: string;
+  schoolName?: string;
+  learningGoal?: string;
+}
+
 export interface ChatRequestPayload {
   message: string;
   mode?: string;
@@ -21,6 +30,16 @@ export interface ChatRequestPayload {
   courseTrack?: string;
   language?: string;
   history?: Array<{ sender: string; text: string }>;
+  studentProfile?: StudentMemoryContext | null;
+}
+
+export class TutorApiError extends Error {
+  statusCode: number;
+  constructor(message: string, statusCode: number = 502) {
+    super(message);
+    this.name = 'TutorApiError';
+    this.statusCode = statusCode;
+  }
 }
 
 export function createGeminiClient(apiKey = process.env.GEMINI_API_KEY || ''): GoogleGenAI | null {
@@ -78,6 +97,24 @@ export function buildTutorSystemPrompt(payload: ChatRequestPayload): string {
       ? 'Explain the concept clearly and end with 1 quick practice check question so the student can test their understanding.'
       : 'Answer the educational question thoroughly, accurately, and step-by-step, explaining WHY the concept works so the student truly learns.';
 
+  const studentMemoryLines: string[] = [];
+  const profile = payload.studentProfile;
+  if (profile && typeof profile === 'object') {
+    const clean = (val?: string, max = 120) =>
+      typeof val === 'string' ? val.replace(/[\r\n]+/g, ' ').trim().slice(0, max) : '';
+    const name = clean(profile.displayName, 60);
+    const school = clean(profile.schoolName, 100);
+    const goal = clean(profile.learningGoal, 200);
+    if (name) studentMemoryLines.push(`Student Name: ${name}`);
+    if (school) studentMemoryLines.push(`School / University: ${school}`);
+    if (goal) studentMemoryLines.push(`Learning Goal: ${goal}`);
+  }
+
+  const memoryBlock =
+    studentMemoryLines.length > 0
+      ? `\n8. Registered Student Memory (ALWAYS remember and personalize replies for this returning student):\n   - ${studentMemoryLines.join('\n   - ')}\n   - Greet or encourage them naturally by name when helpful, and tailor examples to their goal.`
+      : '';
+
   return `You are "Sir Lax", a beloved, deeply knowledgeable, patient educator and academic mentor ("EDUCATION IS THE KEY FOR CHANGE!").
 You help learners from Elementary (Grades 1–6), Junior High School (Grades 7–10), and Senior High School (Grades 11–12: STEM, ABM, HUMSS, TVL) all the way through ALL College & University courses (Mathematics, Calculus, Statistics, Physics, Chemistry, Biology, Engineering, Architecture, Computer Science & Programming, Nursing & Health Sciences, Accountancy & Finance, Business & Economics, Education, Law, Humanities, Social Sciences, and Thesis/Research).
 
@@ -87,111 +124,226 @@ Rules:
 3. Selected Focus Area: ${courseContext}. (Still answer accurately even if the question spans another academic course!)
 4. ${languageInstruction}
 5. ${modeInstruction}
-6. Formatting & Length: Keep paragraphs concise and well-structured with numbered steps, bullet points, bold key terms, or clean code/formula blocks when appropriate (aim for ~150–450 words depending on complexity).
-7. Encouragement: Be supportive and respectful—supportive & playful for elementary kids, respectful & motivating for college youth.`;
+6. Formatting & Length: Keep answers clear, concise, and fast to read (~120–260 words) using numbered steps, short bullet points, bold key terms, and readable math/code symbols (+, −, ×, ÷, =, ^, or code blocks). Do NOT use raw LaTeX syntax like $$...$$ or \\text{}.
+7. Encouragement: Be supportive and respectful—supportive & playful for elementary kids, respectful & motivating for college youth.${memoryBlock}`;
 }
 
-export function generateSmartFallbackReply(
-  query: string,
-  mode = 'homework',
-  gradeLevel = 'grade-1',
-  language = 'simple-english'
-): string {
-  const q = query.toLowerCase();
-  const isTagalog = language === 'filipino';
+function formatReadableGeminiError(err: any): { message: string; statusCode: number } {
+  const statusCode =
+    typeof err?.status === 'number'
+      ? err.status
+      : typeof err?.statusCode === 'number'
+      ? err.statusCode
+      : 502;
+  const raw = typeof err?.message === 'string' ? err.message : '';
 
-  if (q.includes('photo') || q.includes('photosynthesis') || q.includes('plant')) {
-    if (isTagalog) {
-      return `🌟 **Hello anak! Sagutin natin ito nang napakadali!**\n\nAng **Photosynthesis** ay kung paano nagluluto ng sariling pagkain ang mga halaman (plants)!\n\n1. ☀️ **Araw (Sunlight):** Pinagkukunan ng enerhiya.\n2. 💧 **Tubig (Water):** Hinihigop ng ugat mula sa lupa.\n3. 🌬️ **Carbon Dioxide (CO2):** Hinihinga ng mga dahon.\n\n✨ **Resulta:** Nakakagawa sila ng glucose (pagkain) at naglalabas ng **Oxygen**! 🌿`;
+  if (raw.includes('API_KEY_INVALID') || statusCode === 400 || statusCode === 403 || raw.includes('PERMISSION_DENIED')) {
+    return {
+      message: 'Gemini API key is invalid or missing permissions. Please verify GEMINI_API_KEY in Settings > Secrets or Vercel Environment Variables.',
+      statusCode,
+    };
+  }
+
+  if (statusCode === 503 || raw.includes('UNAVAILABLE') || raw.includes('high demand')) {
+    return {
+      message: 'Gemini is temporarily busy due to high demand. Please tap Retry in a moment.',
+      statusCode: 503,
+    };
+  }
+
+  if (statusCode === 429 || raw.includes('RESOURCE_EXHAUSTED')) {
+    return {
+      message: 'Gemini rate limit reached briefly. Please wait a few seconds and tap Retry.',
+      statusCode: 429,
+    };
+  }
+
+  // Strip JSON wrapper if SDK serialized an error object
+  if (raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw);
+      const nestedMsg = parsed?.error?.message;
+      if (nestedMsg) {
+        return { message: nestedMsg, statusCode };
+      }
+    } catch {
+      // fall through
     }
-    return `🌟 **Photosynthesis Explained Clearly!**\n\n**Photosynthesis** is how plants convert light energy into chemical food (glucose): **6CO₂ + 6H₂O + Light → C₆H₁₂O₆ + 6O₂**.\n\n1. ☀️ **Sunlight:** Captured by chlorophyll inside chloroplasts.\n2. 💧 **Water:** Absorbed by roots.\n3. 🌬️ **Carbon Dioxide:** Taken in through leaf stomata.\n\n✨ **Result:** Plants produce sugar for growth and release **Oxygen**! 👏`;
   }
 
-  if (q.includes('calculus') || q.includes('derivative') || q.includes('integral') || q.includes('limit')) {
-    return `📐 **College Calculus Quick Breakdown:**\n\n1. **Derivatives (Rate of Change):**\n   - Power Rule: d/dx [x^n] = n·x^(n−1)\n   - Product Rule: (fg)' = f'g + fg'\n   - Chain Rule: d/dx [f(g(x))] = f'(g(x)) · g'(x)\n2. **Integrals (Area / Accumulation):**\n   - ∫ x^n dx = x^(n+1)/(n+1) + C\n\nShare your exact function and let us walk through every step together!`;
+  return {
+    message: raw || 'Unable to reach Gemini AI right now. Please tap Retry.',
+    statusCode,
+  };
+}
+
+function isTransientGeminiError(err: any): boolean {
+  const status = typeof err?.status === 'number' ? err.status : err?.statusCode;
+  const msg = String(err?.message || '');
+  return (
+    status === 503 ||
+    status === 429 ||
+    status === 500 ||
+    status === 504 ||
+    msg.includes('UNAVAILABLE') ||
+    msg.includes('high demand') ||
+    msg.includes('RESOURCE_EXHAUSTED') ||
+    msg.includes('timeout')
+  );
+}
+
+async function callModelWithTimeout(
+  genAI: GoogleGenAI,
+  model: string,
+  contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>,
+  systemInstruction: string,
+  timeoutMs: number
+): Promise<string> {
+  const apiPromise = genAI.models.generateContent({
+    model,
+    contents,
+    config: {
+      systemInstruction,
+    },
+  });
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new TutorApiError('Gemini AI took too long to respond. Please try again.', 504)),
+      timeoutMs
+    )
+  );
+
+  const response = await Promise.race([apiPromise, timeoutPromise]);
+  const reply = response.text?.trim();
+  if (!reply) {
+    throw new TutorApiError('Gemini AI returned an empty answer. Please try again.', 502);
+  }
+  return reply;
+}
+
+async function callOpenAiFailover(
+  systemInstruction: string,
+  contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>,
+  apiKey = process.env.OPENAI_API_KEY || ''
+): Promise<string | null> {
+  const trimmed = apiKey.trim();
+  if (trimmed.length <= 10 || trimmed.startsWith('MY_')) {
+    return null;
   }
 
-  if (q.includes('accounting') || q.includes('debit') || q.includes('credit') || q.includes('journal') || q.includes('balance sheet')) {
-    return `📊 **Accountancy & Finance Quick Guide:**\n\n- **Core Equation:** Assets = Liabilities + Owner's Equity\n- **Debits increase:** Assets, Expenses, Drawings\n- **Credits increase:** Liabilities, Equity, Revenue\n\nShare your exact transaction or trial balance numbers and we can prepare the full journal entries step-by-step!`;
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemInstruction },
+    ...contents.map((c) => ({
+      role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: c.parts.map((p) => p.text).join('\n'),
+    })),
+  ];
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 22000);
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${trimmed}`,
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        max_tokens: 700,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.warn(`OpenAI failover error (${res.status}):`, errBody);
+      return null;
+    }
+
+    const data: any = await res.json();
+    const reply = data?.choices?.[0]?.message?.content?.trim();
+    return reply || null;
+  } catch (err: any) {
+    console.warn('OpenAI failover failed:', err?.message || err);
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  if (q.includes('nursing') || q.includes('anatomy') || q.includes('pharmacology') || q.includes('adpie')) {
-    return `🩺 **Nursing & Allied Health Study Guide:**\n\nUse **ADPIE** (**A**ssessment → **D**iagnosis → **P**lanning → **I**mplementation → **E**valuation) and prioritize **Airway, Breathing, Circulation (ABCs)**.\n\nTell me your specific organ system, medication class, or patient scenario to review together!`;
-  }
-
-  if (q.includes('python') || q.includes('java') || q.includes('sql') || q.includes('algorithm') || q.includes('code') || q.includes('programming')) {
-    return `💻 **Computer Science & IT Study Guide:**\n\nBreak every programming problem into: **1) Inputs & Constraints → 2) Core Data Structure/Algorithm → 3) Edge Cases → 4) Time/Space Complexity**.\n\nPaste your code snippet or topic (OOP, SQL joins, recursion, data structures) and let us work through it!`;
-  }
-
-  if (q.includes('add') || q.includes('plus') || q.includes('+') || q.includes('math') || mode === 'math') {
-    return `🍎 **Math Step-by-Step with Sir Lax!**\n\nWrite down your **Given**, choose the **Operation / Formula**, and solve one step at a time—for example: 3 + 2 = **5**!\n\nType your exact math equation (from basic arithmetic to algebra or calculus) so we can solve it together! 🌟`;
-  }
-
-  if (mode === 'diy' || q.includes('project') || q.includes('diy') || q.includes('experiment')) {
-    return `🛠️ **DIY School Project Guide:**\n\n1. Define what you are building.\n2. Gather safe, low-cost or recycled materials.\n3. Follow numbered assembly steps carefully and record observations.\n\nTell me your grade level and subject to get a full custom project plan!`;
-  }
-
-  const levelBadge =
-    gradeLevel === 'college'
-      ? 'College Course Support'
-      : gradeLevel === 'senior-high'
-      ? 'Senior High School Support (Grades 11–12)'
-      : gradeLevel === 'junior-high'
-      ? 'Junior High School Support (Grades 7–10)'
-      : 'Elementary Support (Grades 1–6)';
-
-  return `🌟 **Hi! Kuya Sir Lax is here to help you!** *(${levelBadge})*\n\nI received your study question: "*${query}*".\n\nHere is how to tackle it step-by-step:\n1. 📖 **Core Concept:** Identify the main definition, law, or principle in your subject.\n2. 💡 **Method / Formula:** List the given facts and what you need to solve or explain.\n3. ✏️ **Apply & Check:** Work one step at a time and verify your reasoning.\n\n*(Note: Live AI answers activate automatically once GEMINI_API_KEY is configured on the server—until then, share math equations, Calculus, IT, Accounting, Nursing, or DIY keywords for instant built-in guides!)* 🇵🇭💪`;
 }
 
 export async function generateTutorReply(
   genAI: GoogleGenAI | null,
   payload: ChatRequestPayload
-): Promise<{ reply: string; source: 'ai' | 'offline-engine' }> {
-  const { message, mode = 'homework', gradeLevel = 'grade-1', language = 'simple-english', history } = payload;
+): Promise<{ reply: string; source: 'ai' | 'chatgpt' }> {
+  const { message, history } = payload;
 
-  if (genAI) {
-    try {
-      const systemPrompt = buildTutorSystemPrompt(payload);
-      const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+  const systemPrompt = buildTutorSystemPrompt(payload);
+  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-      if (Array.isArray(history) && history.length > 0) {
-        for (const item of history.slice(-6)) {
-          if (item && typeof item.text === 'string' && item.text.trim()) {
-            contents.push({
-              role: item.sender === 'user' ? 'user' : 'model',
-              parts: [{ text: item.text }],
-            });
-          }
-        }
+  if (Array.isArray(history) && history.length > 0) {
+    for (const item of history.slice(-6)) {
+      if (!item || typeof item.text !== 'string' || !item.text.trim()) continue;
+      const role: 'user' | 'model' = item.sender === 'user' ? 'user' : 'model';
+      if (contents.length === 0 && role === 'model') continue;
+      const last = contents[contents.length - 1];
+      if (last && last.role === role) {
+        last.parts[0].text += `\n\n${item.text}`;
+      } else {
+        contents.push({ role, parts: [{ text: item.text }] });
       }
-
-      contents.push({
-        role: 'user',
-        parts: [{ text: message }],
-      });
-
-      const apiPromise = genAI.models.generateContent({
-        model: 'gemini-4-hydrogen',
-        contents,
-        config: {
-          systemInstruction: systemPrompt,
-        },
-      });
-
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini API timeout')), 20000)
-      );
-
-      const response = await Promise.race([apiPromise, timeoutPromise]);
-      const reply = response.text || 'I hear you, my student! Let us break this topic down step-by-step.';
-      return { reply, source: 'ai' };
-    } catch (geminiError: any) {
-      console.warn('Gemini API fallback to local tutor:', geminiError?.message || geminiError);
     }
   }
 
-  return {
-    reply: generateSmartFallbackReply(message, mode, gradeLevel, language),
-    source: 'offline-engine',
-  };
+  const lastTurn = contents[contents.length - 1];
+  if (lastTurn && lastTurn.role === 'user') {
+    if (lastTurn.parts[0].text.trim() !== message.trim()) {
+      lastTurn.parts[0].text += `\n\n${message}`;
+    }
+  } else {
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }],
+    });
+  }
+
+  let lastError: any = null;
+
+  if (genAI) {
+    const modelsToTry = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite', 'gemini-4-hydrogen'];
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const model = modelsToTry[i];
+      try {
+        const reply = await callModelWithTimeout(genAI, model, contents, systemPrompt, 18000);
+        return { reply, source: 'ai' };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Gemini attempt ${i + 1} (${model}) failed:`, err?.message || err);
+        const isSecondaryModel = model !== 'gemini-4-hydrogen';
+        if (!isTransientGeminiError(err) && !isSecondaryModel) {
+          break;
+        }
+        if (i < modelsToTry.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+      }
+    }
+  } else {
+    lastError = new TutorApiError(
+      'Gemini AI is not configured on this server (missing GEMINI_API_KEY).',
+      503
+    );
+  }
+
+  // Optional automatic failover to ChatGPT (OpenAI) if OPENAI_API_KEY is configured
+  const openAiReply = await callOpenAiFailover(systemPrompt, contents);
+  if (openAiReply) {
+    return { reply: openAiReply, source: 'chatgpt' };
+  }
+
+  const formatted = formatReadableGeminiError(lastError);
+  throw new TutorApiError(formatted.message, formatted.statusCode);
 }

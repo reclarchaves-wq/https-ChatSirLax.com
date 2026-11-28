@@ -5,7 +5,9 @@ export default function handler(req: any, res: any) {
     (origin === 'https://localhost' ||
       origin === 'http://localhost' ||
       origin === 'capacitor://localhost' ||
-      origin.startsWith('http://localhost:'))
+      origin.startsWith('http://localhost:') ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.run.app'))
   ) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -22,6 +24,11 @@ export default function handler(req: any, res: any) {
       process.env.GEMINI_API_KEY &&
         !process.env.GEMINI_API_KEY.startsWith('MY_') &&
         process.env.GEMINI_API_KEY.trim().length > 10
+    ),
+    openaiConfigured: Boolean(
+      process.env.OPENAI_API_KEY &&
+        !process.env.OPENAI_API_KEY.startsWith('MY_') &&
+        process.env.OPENAI_API_KEY.trim().length > 10
     ),
     time: new Date().toISOString(),
   });

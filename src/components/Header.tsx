@@ -1,12 +1,15 @@
 import React from 'react';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { Wifi, WifiOff, Sparkles, HeartHandshake, ShieldCheck, Download, Trophy, Flame } from 'lucide-react';
+import { Wifi, WifiOff, Sparkles, HeartHandshake, ShieldCheck, Download, Trophy, Flame, UserCheck } from 'lucide-react';
 import { LanguageMode } from '../types';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface HeaderProps {
   isOffline: boolean;
-  setIsOffline: (val: boolean) => void;
+  geminiReady?: boolean;
+  studentName?: string;
+  isSignedIn?: boolean;
+  onOpenRegister?: () => void;
   language: LanguageMode;
   setLanguage: (lang: LanguageMode) => void;
   onOpenAdUnits: () => void;
@@ -23,7 +26,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   isOffline,
-  setIsOffline,
+  geminiReady = true,
+  studentName,
+  isSignedIn = false,
+  onOpenRegister,
   language,
   setLanguage,
   onOpenAdUnits,
@@ -38,10 +44,11 @@ export const Header: React.FC<HeaderProps> = ({
   mealsCount,
 }) => {
   const { isInstallable, isInstalled } = usePWAInstall();
+  const firstName = studentName ? studentName.trim().split(/\s+/)[0] : '';
 
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-md border-b-4 border-amber-300">
-      {/* Top micro bar for offline & feeding emergency announcement */}
+      {/* Top micro bar for live online alert status & feeding announcement */}
       <div className="bg-amber-800/80 px-3 py-1 text-xs flex flex-wrap items-center justify-between text-amber-100 gap-2 border-b border-amber-700/50">
         <div className="flex items-center gap-2 font-medium">
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wide">
@@ -52,18 +59,32 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsOffline(!isOffline)}
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs ${
               isOffline
-                ? 'bg-rose-500 text-white hover:bg-rose-600'
-                : 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-600'
+                ? 'bg-rose-500 text-white'
+                : 'bg-emerald-600 text-white border border-emerald-300/60'
             }`}
-            title="Toggle offline test mode"
+            title={
+              isOffline
+                ? 'No internet connection detected'
+                : 'Live online monitor active — Sir Lax AI stays ready at all times'
+            }
           >
-            {isOffline ? <WifiOff size={12} /> : <Wifi size={12} />}
-            {isOffline ? 'Offline Mode Active' : 'Online'}
-          </button>
+            {isOffline ? (
+              <WifiOff size={12} />
+            ) : (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-100"></span>
+              </span>
+            )}
+            {isOffline
+              ? 'Offline • Waiting for Internet'
+              : geminiReady
+              ? 'Online • Gemini AI Alert'
+              : 'Online • AI Ready'}
+          </span>
 
           {!isInstalled && (
             <button
@@ -191,6 +212,28 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden md:inline">Badges</span>
               <span className="bg-amber-950 text-yellow-300 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold">
                 {unlockedBadgesCount}
+              </span>
+            </button>
+          )}
+
+          {/* Student Registration & Memory button */}
+          {onOpenRegister && (
+            <button
+              onClick={onOpenRegister}
+              className={`flex items-center gap-1.5 text-xs sm:text-sm font-bold px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm transition transform hover:scale-105 cursor-pointer border ${
+                isSignedIn
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-300'
+                  : 'bg-amber-800/75 hover:bg-amber-800 text-amber-100 border-amber-400/50'
+              }`}
+              title={
+                isSignedIn
+                  ? `Signed in as ${studentName || 'Registered Student'} — Sir Lax remembers you`
+                  : 'Register so Sir Lax remembers your name, grade & chat history'
+              }
+            >
+              <UserCheck size={15} className={isSignedIn ? 'text-emerald-100' : 'text-yellow-300'} />
+              <span className="hidden md:inline">
+                {firstName || (isSignedIn ? 'Profile' : 'Register')}
               </span>
             </button>
           )}

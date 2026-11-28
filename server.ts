@@ -16,7 +16,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
-// Allow Capacitor APK WebView origins (https://localhost, capacitor://localhost)
+// Allow Capacitor APK WebView and hosted preview origins
 app.use('/api', (req, res, next) => {
   const origin = req.headers.origin;
   if (
@@ -24,7 +24,9 @@ app.use('/api', (req, res, next) => {
     (origin === 'https://localhost' ||
       origin === 'http://localhost' ||
       origin === 'capacitor://localhost' ||
-      origin.startsWith('http://localhost:'))
+      origin.startsWith('http://localhost:') ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.run.app'))
   ) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -49,30 +51,32 @@ let communityStats = {
   adSponsoredMeals: 2150,
 };
 
-// API route for chat with Sir Lax
+// API route for chat with Sir Lax (Gemini only)
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, mode, gradeLevel, courseTrack, language, history } = req.body;
+    const { message, mode, gradeLevel, courseTrack, language, history, studentProfile } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    communityStats.homeworkSolved += 1;
-
-    const result = await generateTutorReply(genAI, {
+    const activeClient = genAI || createGeminiClient();
+    const result = await generateTutorReply(activeClient, {
       message,
       mode,
       gradeLevel,
       courseTrack,
       language,
       history,
+      studentProfile,
     });
 
+    communityStats.homeworkSolved += 1;
     return res.json(result);
   } catch (error: any) {
+    const status = typeof error?.statusCode === 'number' ? error.statusCode : 500;
     console.error('Error handling /api/chat:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(status).json({ error: error?.message || 'Internal server error' });
   }
 });
 
@@ -130,9 +134,11 @@ app.post('/api/support-meal', (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
+  const openAiKey = (process.env.OPENAI_API_KEY || '').trim();
   res.json({
     status: 'ok',
-    geminiConfigured: Boolean(genAI),
+    geminiConfigured: Boolean(genAI || createGeminiClient()),
+    openaiConfigured: openAiKey.length > 10 && !openAiKey.startsWith('MY_'),
     time: new Date().toISOString(),
   });
 });

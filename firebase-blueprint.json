@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Registered student profile remembered by Sir Lax across sessions and devices.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the student owner."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Student name or nickname used by Sir Lax when chatting."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 120,
+          "description": "Verified account email stored strictly for the owner."
+        },
+        "gradeLevel": {
+          "type": "string",
+          "enum": ["grade-1", "grade-4", "junior-high", "senior-high", "college"],
+          "description": "Learner education level."
+        },
+        "courseTrack": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "description": "Selected academic subject or college track."
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["simple-english", "filipino", "bilingual"],
+          "description": "Preferred tutoring language."
+        },
+        "schoolName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Optional school or university name."
+        },
+        "learningGoal": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200,
+          "description": "Optional study goal remembered by Sir Lax."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the student registered."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest profile update."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "gradeLevel",
+        "courseTrack",
+        "preferredLanguage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatHistoryMessage": {
+      "title": "ChatHistoryMessage",
+      "description": "Persisted chat turn between a registered student and Sir Lax.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "sender": {
+          "type": "string",
+          "enum": ["user", "bot"],
+          "description": "Who sent the message."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000,
+          "description": "Message body."
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["gemini", "chatgpt"],
+          "description": "AI provider that generated a bot reply."
+        },
+        "timestampLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "Formatted display timestamp."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp for ordering chat history."
+        }
+      },
+      "required": ["uid", "sender", "text", "timestampLabel", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/StudentProfile" },
+      "description": "Private student registration profile owned strictly by userId."
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatHistoryMessage" },
+      "description": "Private chat memory subcollection belonging to userId."
+    }
+  }
+}

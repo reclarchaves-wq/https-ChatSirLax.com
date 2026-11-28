@@ -1,7 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import type { User } from 'firebase/auth';
 import { SIR_LAX_AVATAR } from '../data/mockData';
-import { ChatMessage, EducationCourseTrack, GradeLevel, LanguageMode, ModeType } from '../types';
+import {
+  ChatMessage,
+  EducationCourseTrack,
+  GradeLevel,
+  LanguageMode,
+  ModeType,
+  StudentProfile,
+} from '../types';
 import { sendChatMessage } from '../services/chatService';
+import {
+  clearStudentMessages,
+  saveStudentMessage,
+} from '../services/studentProfileService';
 import { SpeechService } from '../services/speechService';
 import confetti from 'canvas-confetti';
 import {
@@ -11,47 +23,47 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
-  WifiOff,
+  AlertCircle,
   Lightbulb,
-  CheckCircle2,
   Copy,
   Check,
   RefreshCw,
-  HelpCircle,
-  Share2,
   Scissors,
   Calculator,
   GraduationCap,
   BookOpen,
+  UserCheck,
+  Trash2,
+  WifiOff,
 } from 'lucide-react';
 
 interface ChatTabProps {
   language: LanguageMode;
   fontSize: 'normal' | 'large' | 'huge';
-  isForceOffline: boolean;
   onSolveHomework?: () => void;
+  authUser: User | null;
+  studentProfile: StudentProfile | null;
+  savedMessages: ChatMessage[];
+  isOffline: boolean;
+  geminiReady?: boolean;
+  onOpenRegister: () => void;
 }
 
 export const ChatTab: React.FC<ChatTabProps> = ({
   language,
   fontSize,
-  isForceOffline,
   onSolveHomework,
+  authUser,
+  studentProfile,
+  savedMessages,
+  isOffline,
+  geminiReady = true,
+  onOpenRegister,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      sender: 'bot',
-      text: `Hello! I am **Sir Lax**, your AI teacher for **Elementary (Grade 1–6)**, **Junior High (Grades 7–10)**, **Senior High (Grades 11–12: STEM, ABM, HUMSS, TVL)**, and **ALL College Courses**! 🌟\n\nAsk any education question—from basic reading, math, and DIY projects to Algebra, Physics, Practical Research, **College Calculus, Engineering, Programming/IT, Nursing, Accountancy, Education, Law, or Thesis**. Type below or tap **🎙️** to speak! ✏️🎓`,
-      timestamp: 'Just now',
-      suggestedFollowUps: [
-        'Elementary (Grade 1–6): How do plants make food? (Simple words)',
-        'Junior High (Grades 7–10): Solve a quadratic equation step-by-step',
-        'Senior High (STEM/ABM/HUMSS): Explain General Chemistry or Practical Research',
-        'College (All Courses): Explain SQL JOINs, Derivatives, ADPIE, or Debit vs Credit',
-      ],
-    },
-  ]);
+  const [guestMessages, setGuestMessages] = useState<ChatMessage[]>([]);
+  const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
+  const [speechNotice, setSpeechNotice] = useState<string | null>(null);
+  const [confirmClearChat, setConfirmClearChat] = useState(false);
 
   const [input, setInput] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -70,6 +82,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       window.history.replaceState({}, '', cleanUrl);
     }
   }, []);
+
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<ModeType>('homework');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('grade-1');
@@ -81,6 +94,48 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
+  // Sync student grade & course track when profile loads or updates
+  useEffect(() => {
+    if (studentProfile) {
+      if (studentProfile.gradeLevel) setGradeLevel(studentProfile.gradeLevel);
+      if (studentProfile.courseTrack) setCourseTrack(studentProfile.courseTrack);
+    }
+  }, [studentProfile]);
+
+  const welcomeMessage = useMemo<ChatMessage>(() => {
+    const studentName = studentProfile?.displayName?.trim() || authUser?.displayName?.trim();
+    const schoolNote = studentProfile?.schoolName ? ` from **${studentProfile.schoolName}**` : '';
+    const goalNote = studentProfile?.learningGoal
+      ? `\n\n🎯 I also remember your study goal: **${studentProfile.learningGoal}**.`
+      : '';
+
+    const greeting = studentName
+      ? `Welcome back, **${studentName}**${schoolNote}! I am **Sir Lax**, and I always remember your study profile! 🌟${goalNote}\n\nWhat homework, project, or exam topic would you like to master today? Type below or tap **🎙️** to speak! ✏️🎓`
+      : `Hello! I am **Sir Lax**, your AI teacher for **Elementary (Grade 1–6)**, **Junior High (Grades 7–10)**, **Senior High (Grades 11–12: STEM, ABM, HUMSS, TVL)**, and **ALL College Courses**! 🌟\n\nAsk any education question—from basic reading, math, and DIY projects to Algebra, Physics, Practical Research, **College Calculus, Engineering, Programming/IT, Nursing, Accountancy, Education, Law, or Thesis**. Type below or tap **🎙️** to speak! ✏️🎓`;
+
+    return {
+      id: 'welcome-1',
+      sender: 'bot',
+      text: greeting,
+      timestamp: 'Ready',
+      suggestedFollowUps: [
+        'Elementary (Grade 1–6): How do plants make food? (Simple words)',
+        'Junior High (Grades 7–10): Solve a quadratic equation step-by-step',
+        'Senior High (STEM/ABM/HUMSS): Explain General Chemistry or Practical Research',
+        'College (All Courses): Explain SQL JOINs, Derivatives, ADPIE, or Debit vs Credit',
+      ],
+    };
+  }, [studentProfile, authUser]);
+
+  const hasRegisteredProfile = Boolean(authUser && studentProfile);
+
+  const messages = useMemo<ChatMessage[]>(() => {
+    if (hasRegisteredProfile) {
+      return [welcomeMessage, ...savedMessages, ...optimisticMessages];
+    }
+    return [welcomeMessage, ...guestMessages];
+  }, [hasRegisteredProfile, welcomeMessage, savedMessages, optimisticMessages, guestMessages]);
+
   // Auto-scroll inside message list only when conversation grows
   useEffect(() => {
     if ((messages.length > 1 || loading) && messagesContainerRef.current) {
@@ -89,7 +144,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         behavior: 'smooth',
       });
     }
-  }, [messages, loading]);
+  }, [messages.length, loading]);
 
   // Clean up speech on unmount
   useEffect(() => {
@@ -120,17 +175,44 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
     SpeechService.stopSpeaking();
     setActiveSpeechId(null);
+    setSpeechNotice(null);
 
+    const timestampLabel = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const userMsgId = `user-${Date.now()}`;
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: userMsgId,
       sender: 'user',
-      text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text,
+      timestamp: timestampLabel,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const historyBeforeSend = messages.filter((m) => m.id !== 'welcome-1' && !m.isError);
+
+    if (hasRegisteredProfile) {
+      setOptimisticMessages((prev) => [...prev.filter((m) => !m.isError), userMsg]);
+    } else {
+      setGuestMessages((prev) => [...prev, userMsg]);
+    }
+
     setInput('');
     setLoading(true);
+
+    if (hasRegisteredProfile && authUser) {
+      try {
+        await saveStudentMessage(authUser.uid, {
+          sender: 'user',
+          text,
+          timestampLabel,
+        });
+        setOptimisticMessages((prev) => prev.filter((m) => m.id !== userMsgId));
+      } catch (saveErr) {
+        console.warn('Could not save user message to Firestore memory:', saveErr);
+      }
+    }
 
     try {
       const response = await sendChatMessage(
@@ -138,20 +220,50 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         mode,
         gradeLevel,
         language,
-        [...messages, userMsg],
-        isForceOffline,
-        courseTrack
+        historyBeforeSend,
+        courseTrack,
+        studentProfile
       );
 
-      const botMsg: ChatMessage = {
-        id: `bot-${Date.now()}`,
-        sender: 'bot',
-        text: response.text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isOffline: response.isOffline,
-      };
+      const botTimestamp = new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const provider: 'gemini' | 'chatgpt' =
+        response.source === 'chatgpt' ? 'chatgpt' : 'gemini';
 
-      setMessages((prev) => [...prev, botMsg]);
+      if (hasRegisteredProfile && authUser) {
+        try {
+          await saveStudentMessage(authUser.uid, {
+            sender: 'bot',
+            text: response.text,
+            timestampLabel: botTimestamp,
+            provider,
+          });
+          setOptimisticMessages((prev) => prev.filter((m) => m.id !== userMsgId));
+        } catch (saveErr) {
+          console.warn('Could not save bot reply to Firestore memory:', saveErr);
+          const botMsg: ChatMessage = {
+            id: `bot-${Date.now()}`,
+            sender: 'bot',
+            text: response.text,
+            timestamp: botTimestamp,
+            isOffline: false,
+            provider,
+          };
+          setOptimisticMessages((prev) => [...prev, botMsg]);
+        }
+      } else {
+        const botMsg: ChatMessage = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          text: response.text,
+          timestamp: botTimestamp,
+          isOffline: false,
+          provider,
+        };
+        setGuestMessages((prev) => [...prev, botMsg]);
+      }
 
       // Count every solved question toward Daily Study Streak and Homework milestones
       if (onSolveHomework) onSolveHomework();
@@ -166,15 +278,45 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       ) {
         triggerConfetti();
       }
-    } catch (err) {
-      console.error('Chat error:', err);
+    } catch (err: any) {
+      const errorText =
+        err?.message || 'Unable to get an answer from Gemini AI right now. Please try again.';
+      const errorMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        sender: 'bot',
+        text: errorText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isError: true,
+        retryText: text,
+      };
+      if (hasRegisteredProfile) {
+        setOptimisticMessages((prev) => [...prev.filter((m) => m.id !== userMsgId), errorMsg]);
+      } else {
+        setGuestMessages((prev) => [...prev, errorMsg]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClearMemoryChat = async () => {
+    if (authUser) {
+      try {
+        await clearStudentMessages(authUser.uid);
+        setOptimisticMessages([]);
+        setConfirmClearChat(false);
+      } catch (err) {
+        console.warn('Unable to clear saved messages:', err);
+      }
+    } else {
+      setGuestMessages([]);
+      setConfirmClearChat(false);
+    }
+  };
+
   // Toggle voice recognition
   const toggleListening = () => {
+    setSpeechNotice(null);
     if (isListening) {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -184,7 +326,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     }
 
     if (!SpeechService.isSpeechRecognitionSupported()) {
-      alert('Speech recognition is not supported in this browser. Please type your message.');
+      setSpeechNotice('Voice recognition is not supported in this browser. Please type your question below.');
       return;
     }
 
@@ -243,8 +385,98 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     return 'text-sm sm:text-base';
   };
 
+  const studentDisplayName = studentProfile?.displayName?.trim() || authUser?.displayName?.trim();
+
   return (
-    <div className="flex flex-col h-[calc(100dvh-250px)] min-h-[400px] max-h-[680px] max-w-4xl mx-auto bg-stone-50 rounded-2xl shadow-md border-2 border-amber-300 overflow-hidden my-2">
+    <div className="flex flex-col h-[calc(100dvh-250px)] min-h-[420px] max-h-[700px] max-w-4xl mx-auto bg-stone-50 rounded-2xl shadow-md border-2 border-amber-300 overflow-hidden my-2">
+      {/* Always-alert Online & Student Memory Strip */}
+      <div
+        className={`shrink-0 px-3 py-1.5 border-b flex flex-wrap items-center justify-between gap-2 text-xs ${
+          isOffline
+            ? 'bg-rose-50 border-rose-200 text-rose-900'
+            : 'bg-emerald-50/90 border-emerald-200 text-emerald-950'
+        }`}
+      >
+        <div className="flex items-center gap-2 font-bold">
+          {isOffline ? (
+            <>
+              <WifiOff size={14} className="text-rose-600" />
+              <span>Offline — waiting for internet connection to reach Gemini AI</span>
+            </>
+          ) : (
+            <>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+              </span>
+              <span>
+                {geminiReady
+                  ? 'Live Alert: Online & Gemini AI Ready at All Times'
+                  : 'Online Mode Active — Ready for Questions'}
+              </span>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {authUser ? (
+            <>
+              <button
+                type="button"
+                onClick={onOpenRegister}
+                className="inline-flex items-center gap-1 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition cursor-pointer"
+                title="Edit your registered student memory profile"
+              >
+                <UserCheck size={12} className="text-emerald-600" />
+                <span>
+                  {studentProfile
+                    ? `Remembering ${studentProfile.displayName}`
+                    : 'Complete Registration'}
+                </span>
+              </button>
+
+              {savedMessages.length > 0 &&
+                (confirmClearChat ? (
+                  <span className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handleClearMemoryChat}
+                      className="bg-rose-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer"
+                    >
+                      Clear Now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClearChat(false)}
+                      className="bg-stone-200 text-stone-700 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearChat(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-500 hover:text-rose-700 px-1.5 py-0.5 rounded cursor-pointer"
+                    title="Clear saved chat history"
+                  >
+                    <Trash2 size={12} /> Clear
+                  </button>
+                ))}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenRegister}
+              className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs transition cursor-pointer"
+            >
+              <UserCheck size={12} />
+              <span>Register so Sir Lax remembers you</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Control bar: Modes & Grade selector */}
       <div className="shrink-0 bg-amber-100/70 border-b border-amber-200 p-2.5 flex flex-wrap items-center justify-between gap-2">
         {/* Mode pills */}
@@ -335,17 +567,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </div>
       </div>
 
-      {/* Offline Mode Alert banner if offline */}
-      {isForceOffline && (
-        <div className="bg-amber-500 text-amber-950 px-3 py-1.5 text-xs font-bold flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <WifiOff size={14} />
-            <span>Offline Study Mode: Instant answers from downloaded local pack. No mobile data needed!</span>
-          </div>
-          <span className="text-[11px] bg-white/40 px-2 py-0.5 rounded-full">100% Free &amp; Offline</span>
-        </div>
-      )}
-
       {/* Chat Messages List */}
       <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-4">
         {messages.map((msg) => {
@@ -373,6 +594,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 className={`max-w-[85%] sm:max-w-[78%] rounded-2xl p-3 sm:p-4 shadow-xs relative transition-all ${
                   isUser
                     ? 'bg-amber-600 text-white rounded-br-xs'
+                    : msg.isError
+                    ? 'bg-rose-50 text-rose-950 border border-rose-300 rounded-bl-xs'
                     : 'bg-white text-stone-800 border border-amber-200/80 rounded-bl-xs'
                 }`}
               >
@@ -381,12 +604,15 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-amber-100 text-xs text-amber-900 font-bold">
                     <span className="flex items-center gap-1.5">
                       Sir Lax (Your Teacher)
-                      {msg.isOffline === true && (
-                        <span className="bg-sky-100 text-sky-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
-                          Offline Pack
+                      {msg.isError ? (
+                        <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
+                          <AlertCircle size={11} /> Connection Issue
                         </span>
-                      )}
-                      {msg.isOffline === false && (
+                      ) : msg.provider === 'chatgpt' ? (
+                        <span className="bg-teal-100 text-teal-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
+                          ✨ ChatGPT AI
+                        </span>
+                      ) : (
                         <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
                           ✨ Gemini AI
                         </span>
@@ -401,8 +627,21 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   {msg.text}
                 </div>
 
+                {msg.isError && msg.retryText && (
+                  <div className="mt-3 pt-2 border-t border-rose-200 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleSend(msg.retryText)}
+                      disabled={loading}
+                      className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Retry with Gemini AI</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Bot Message Action Buttons: Read aloud, Copy, etc */}
-                {!isUser && (
+                {!isUser && !msg.isError && (
                   <div className="mt-3 pt-2 border-t border-amber-100 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       <button
@@ -468,12 +707,29 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </div>
             <div className="bg-white border border-amber-200 rounded-2xl p-3 shadow-xs flex items-center gap-2 text-xs font-semibold text-amber-900">
               <RefreshCw size={14} className="animate-spin text-amber-600" />
-              <span>Sir Lax is preparing your easy explanation...</span>
+              <span>
+                {studentDisplayName
+                  ? `Sir Lax is preparing a personalized explanation for ${studentDisplayName}...`
+                  : 'Sir Lax is preparing your easy explanation...'}
+              </span>
             </div>
           </div>
         )}
-
       </div>
+
+      {/* Inline speech notice */}
+      {speechNotice && (
+        <div className="shrink-0 bg-amber-50 border-t border-amber-200 px-4 py-1.5 flex items-center justify-between text-xs text-amber-900 font-medium">
+          <span>{speechNotice}</span>
+          <button
+            type="button"
+            onClick={() => setSpeechNotice(null)}
+            className="text-amber-700 font-bold px-1.5 cursor-pointer"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Voice Listening Overlay */}
       {isListening && (
@@ -520,7 +776,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask any school or college course question (Math, Science, IT, Nursing, Accounting, Thesis)..."
+              placeholder={
+                studentDisplayName
+                  ? `Ask Sir Lax anything, ${studentDisplayName} (Math, Science, IT, Nursing, Thesis)...`
+                  : 'Ask any school or college course question (Math, Science, IT, Nursing, Accounting, Thesis)...'
+              }
               className="w-full bg-stone-100 hover:bg-stone-50 focus:bg-white text-stone-900 text-xs sm:text-sm rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium transition"
               disabled={loading}
             />
@@ -540,7 +800,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         {/* Quick hint for kids */}
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-stone-500 px-1">
           <span>💡 Tap 🎙️ to talk if typing is hard</span>
-          <span className="font-semibold text-amber-800">100% Free Educational Support</span>
+          <span className="font-semibold text-amber-800">
+            {studentProfile ? 'Cloud Memory Active • 100% Free' : '100% Free Educational Support'}
+          </span>
         </div>
       </div>
     </div>

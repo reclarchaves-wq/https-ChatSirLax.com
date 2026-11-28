@@ -1,0 +1,145 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidStudentProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'displayName',
+          'email',
+          'gradeLevel',
+          'courseTrack',
+          'preferredLanguage',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'email',
+          'gradeLevel',
+          'courseTrack',
+          'preferredLanguage',
+          'schoolName',
+          'learningGoal',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid == request.auth.uid
+        && data.uid == userId
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 60
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 120
+        && data.gradeLevel in ['grade-1', 'grade-4', 'junior-high', 'senior-high', 'college']
+        && data.courseTrack is string
+        && data.courseTrack.size() >= 1
+        && data.courseTrack.size() <= 50
+        && data.preferredLanguage in ['simple-english', 'filipino', 'bilingual']
+        && (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() <= 100))
+        && (!('learningGoal' in data) || (data.learningGoal is string && data.learningGoal.size() <= 200))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChatHistoryMessage(data, userId) {
+      return data.keys().hasAll(['uid', 'sender', 'text', 'timestampLabel', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'sender', 'text', 'provider', 'timestampLabel', 'createdAt'])
+        && data.uid is string
+        && data.uid == request.auth.uid
+        && data.uid == userId
+        && data.sender in ['user', 'bot']
+        && data.text is string
+        && data.text.size() >= 1
+        && data.text.size() <= 8000
+        && (!('provider' in data) || data.provider in ['gemini', 'chatgpt'])
+        && data.timestampLabel is string
+        && data.timestampLabel.size() >= 1
+        && data.timestampLabel.size() <= 32
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if isSignedIn() && existing().uid == request.auth.uid;
+
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidStudentProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidStudentProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'email',
+          'gradeLevel',
+          'courseTrack',
+          'preferredLanguage',
+          'schoolName',
+          'learningGoal',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow get: if isValidId(userId)
+          && isValidId(messageId)
+          && isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+
+        allow list: if isValidId(userId)
+          && isOwner(userId)
+          && existing().uid == request.auth.uid;
+
+        allow create: if isValidId(userId)
+          && isValidId(messageId)
+          && isOwner(userId)
+          && isValidChatHistoryMessage(incoming(), userId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId))
+          && get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+
+        allow update: if false;
+
+        allow delete: if isValidId(userId)
+          && isValidId(messageId)
+          && isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+      }
+    }
+  }
+}

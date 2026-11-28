@@ -20,10 +20,24 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   isOffline?: boolean;
+  isError?: boolean;
+  retryText?: string;
+  provider?: 'gemini' | 'chatgpt';
   gradeLevel?: GradeLevel;
   language?: LanguageMode;
   suggestedFollowUps?: string[];
   audioPlaying?: boolean;
+}
+
+export interface StudentProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  gradeLevel: GradeLevel;
+  courseTrack: EducationCourseTrack;
+  preferredLanguage: LanguageMode;
+  schoolName?: string;
+  learningGoal?: string;
 }
 
 export interface OfflineStudyPack {

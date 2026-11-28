@@ -1,13 +1,14 @@
 import React from 'react';
-import { MessageSquareText, BookOpenCheck, UtensilsCrossed, Image as ImageIcon, BarChart3, Coins, Trophy } from 'lucide-react';
+import { MessageSquareText, BookOpenCheck, UtensilsCrossed, Image as ImageIcon, BarChart3, Coins, Trophy, UserCheck } from 'lucide-react';
 
-export type TabKey = 'chat' | 'offline-packs' | 'feeding' | 'media' | 'dashboard' | 'achievements' | 'monetization';
+export type TabKey = 'chat' | 'register' | 'offline-packs' | 'feeding' | 'media' | 'dashboard' | 'achievements' | 'monetization';
 
 interface NavigationProps {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
   downloadedCount: number;
   unlockedBadgesCount?: number;
+  studentName?: string;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -15,7 +16,9 @@ export const Navigation: React.FC<NavigationProps> = ({
   setActiveTab,
   downloadedCount,
   unlockedBadgesCount = 0,
+  studentName,
 }) => {
+  const firstName = studentName ? studentName.trim().split(/\s+/)[0] : '';
   const tabs = [
     {
       id: 'chat' as TabKey,
@@ -23,6 +26,13 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: MessageSquareText,
       badge: 'AI + Voice',
       badgeColor: 'bg-emerald-500 text-white',
+    },
+    {
+      id: 'register' as TabKey,
+      label: firstName ? 'My Profile' : 'Register / Memory',
+      icon: UserCheck,
+      badge: firstName || 'Save Memory',
+      badgeColor: firstName ? 'bg-emerald-600 text-white' : 'bg-violet-600 text-white',
     },
     {
       id: 'achievements' as TabKey,
